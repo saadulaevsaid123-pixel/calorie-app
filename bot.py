@@ -11,7 +11,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 BOT_TOKEN = "8537251737:AAGf8M90pV_77TXXku0aUDAXX0lZQPofPW0"
 
 # Вставь сюда публичный URL твоего сервера (после запуска ngrok)
-WEBAPP_URL = "https://unrefreshed-buffy-parchedly.ngrok-free.dev"
+WEBAPP_URL = "https://calorie-app-56jv.onrender.com"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[
