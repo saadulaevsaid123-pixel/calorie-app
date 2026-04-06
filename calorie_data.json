@@ -1,0 +1,22 @@
+{
+  "profile": {
+    "goal": 2000,
+    "protein_goal": 150,
+    "fat_goal": 70,
+    "carbs_goal": 250
+  },
+  "diary": {
+    "2026-04-06": [
+      {
+        "id": 1775508000522,
+        "name": "Куриная грудка",
+        "grams": 100.0,
+        "meal_type": "Завтрак",
+        "cal": 165,
+        "protein": 31.0,
+        "fat": 3.6,
+        "carbs": 0.0
+      }
+    ]
+  }
+}

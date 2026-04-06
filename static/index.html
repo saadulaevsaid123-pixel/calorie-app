@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Счётчик калорий</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --primary: #1D9E75;
+    --primary-l: #E1F5EE;
+    --primary-d: #0F6E56;
+    --bg: #F4F6F8;
+    --card: #FFFFFF;
+    --text: #1A1A1A;
+    --text2: #6B7280;
+    --border: #E5E7EB;
+    --protein: #5DCAA5;
+    --carbs: #FAC775;
+    --fat: #F0997B;
+    --danger: #E24B4A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+  /* NAV */
+  .nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card);
+         border-top: 1px solid var(--border); display: flex; z-index: 100;
+         padding-bottom: env(safe-area-inset-bottom); }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center;
+             padding: 10px 4px 8px; border: none; background: none; cursor: pointer;
+             color: var(--text2); font-size: 10px; gap: 3px; transition: color .2s; }
+  .nav-btn.active { color: var(--primary); }
+  .nav-btn svg { width: 22px; height: 22px; }
+
+  /* PAGES */
+  .page { display: none; padding: 16px 16px 90px; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px;
+          box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+
+  /* RING */
+  .ring-wrap { display: flex; justify-content: center; margin: 4px 0 16px; }
+  .ring-wrap svg { overflow: visible; }
+  .ring-text { text-anchor: middle; dominant-baseline: middle; }
+
+  /* MACROS */
+  .macro-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .macro-card { flex: 1; background: var(--bg); border-radius: 12px; padding: 10px 8px; text-align: center; }
+  .macro-val { font-size: 15px; font-weight: 700; }
+  .macro-name { font-size: 10px; color: var(--text2); margin-top: 2px; }
+  .macro-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .macro-fill { height: 100%; border-radius: 2px; transition: width .4s; }
+
+  /* MEAL */
+  .meal-group { margin-bottom: 10px; }
+  .meal-header { display: flex; justify-content: space-between; align-items: center;
+                 padding: 10px 0 8px; border-bottom: 1px solid var(--border); }
+  .meal-title { font-size: 14px; font-weight: 600; }
+  .meal-cal { font-size: 12px; color: var(--text2); }
+  .add-meal-btn { background: var(--primary-l); color: var(--primary); border: none;
+                  border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600;
+                  cursor: pointer; }
+  .food-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0;
+               border-bottom: 1px solid var(--border); }
+  .food-item:last-child { border-bottom: none; }
+  .food-name { font-size: 13px; font-weight: 500; }
+  .food-meta { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  .food-cal { font-size: 13px; font-weight: 700; margin-right: 8px; }
+  .del-btn { background: none; border: none; color: var(--danger); font-size: 16px;
+             cursor: pointer; padding: 0 2px; line-height: 1; }
+  .empty-meal { font-size: 12px; color: var(--text2); padding: 8px 0; }
+
+  /* ADD PAGE */
+  .meal-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .meal-tab { background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+              padding: 6px 14px; font-size: 12px; font-weight: 500; cursor: pointer;
+              color: var(--text2); transition: all .2s; }
+  .meal-tab.active { background: var(--primary-l); border-color: var(--primary);
+                     color: var(--primary); }
+  .search-input { width: 100%; padding: 12px 14px; border: 1px solid var(--border);
+                  border-radius: 12px; font-size: 14px; background: var(--card);
+                  outline: none; margin-bottom: 10px; }
+  .search-input:focus { border-color: var(--primary); }
+  .food-list-item { display: flex; justify-content: space-between; align-items: center;
+                    padding: 12px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .food-list-item:active { background: var(--bg); }
+  .food-list-name { font-size: 14px; font-weight: 500; }
+  .food-list-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .add-circle { width: 30px; height: 30px; background: var(--primary-l); border-radius: 50%;
+                display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+                color: var(--primary); font-size: 20px; font-weight: 300; line-height: 1; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5);
+                   display: none; align-items: flex-end; z-index: 200; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--card); border-radius: 24px 24px 0 0; padding: 24px 20px 40px;
+           width: 100%; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .modal-sub { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+  .grams-input { width: 100%; text-align: center; font-size: 28px; font-weight: 700;
+                 border: 2px solid var(--border); border-radius: 12px; padding: 14px;
+                 outline: none; margin-bottom: 6px; }
+  .grams-input:focus { border-color: var(--primary); }
+  .cal-preview { text-align: center; font-size: 20px; font-weight: 700;
+                 color: var(--primary); margin-bottom: 16px; }
+  .quick-grams { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+  .quick-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+               padding: 6px 14px; font-size: 12px; cursor: pointer; }
+  .confirm-btn { width: 100%; background: var(--primary); color: #fff; border: none;
+                 border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
+                 cursor: pointer; }
+  .cancel-link { text-align: center; color: var(--text2); font-size: 13px;
+                 margin-top: 12px; cursor: pointer; }
+
+  /* STATS */
+  .week-chart { display: flex; align-items: flex-end; gap: 6px; height: 100px; margin: 8px 0 4px; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center;
+              gap: 4px; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; border-radius: 5px 5px 0 0; background: var(--protein);
+         min-height: 4px; transition: height .5s; }
+  .bar.today { background: var(--primary); }
+  .bar-label { font-size: 9px; color: var(--text2); }
+  .bar-val { font-size: 9px; color: var(--text2); }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat-card { background: var(--bg); border-radius: 12px; padding: 12px; }
+  .stat-val { font-size: 20px; font-weight: 700; }
+  .stat-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  /* PROFILE */
+  .field-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .field-label { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .field-input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+                 font-size: 14px; outline: none; background: var(--bg); }
+  .field-input:focus { border-color: var(--primary); background: var(--card); }
+  .save-btn { width: 100%; background: var(--primary); color: #fff; border: none;
+              border-radius: 14px; padding: 14px; font-size: 15px; font-weight: 700;
+              cursor: pointer; margin-top: 4px; }
+  .calc-btn { width: 100%; background: var(--primary-l); color: var(--primary); border: none;
+              border-radius: 14px; padding: 12px; font-size: 14px; font-weight: 600;
+              cursor: pointer; margin-bottom: 10px; }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text2);
+                   text-transform: uppercase; letter-spacing: .5px; margin: 16px 0 8px; }
+
+  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+  .remaining { font-size: 13px; font-weight: 600; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ДНЕВНИК -->
+<div id="page-diary" class="page active">
+  <div class="page-title">Сегодня</div>
+  <div class="page-sub" id="today-label"></div>
+  <div class="card">
+    <div class="ring-wrap">
+      <svg width="150" height="150" viewBox="0 0 150 150">
+        <circle cx="75" cy="75" r="58" fill="none" stroke="#E5E7EB" stroke-width="13"/>
+        <circle id="ring-progress" cx="75" cy="75" r="58" fill="none" stroke="#1D9E75"
+                stroke-width="13" stroke-linecap="round" stroke-dasharray="364.4"
+                stroke-dashoffset="364.4" transform="rotate(-90 75 75)" style="transition:.5s"/>
+        <text x="75" y="68" class="ring-text" font-size="28" font-weight="700" fill="#1A1A1A" id="ring-cal">0</text>
+        <text x="75" y="92" class="ring-text" font-size="12" fill="#6B7280" id="ring-label">из 2000 ккал</text>
+      </svg>
+    </div>
+    <div class="macro-row">
+      <div class="macro-card">
+        <div class="macro-val" id="m-protein">0г</div>
+        <div class="macro-name">Белки</div>
+        <div class="macro-bar"><div class="macro-fill" id="mb-protein" style="background:var(--protein);width:0%"></div></div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-val" id="m-carbs">0г</div>
+        <div class="macro-name">Углеводы</div>
+        <div class="macro-bar"><div class="macro-fill" id="mb-carbs" style="background:var(--carbs);width:0%"></div></div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-val" id="m-fat">0г</div>
+        <div class="macro-name">Жиры</div>
+        <div class="macro-bar"><div class="macro-fill" id="mb-fat" style="background:var(--fat);width:0%"></div></div>
+      </div>
+    </div>
+    <div class="remaining" id="remaining-text"></div>
+  </div>
+  <div id="meals-container"></div>
+</div>
+
+<!-- ДОБАВИТЬ -->
+<div id="page-add" class="page">
+  <div class="page-title">Добавить еду</div>
+  <div class="meal-tabs" id="meal-tabs"></div>
+  <input class="search-input" id="search-input" placeholder="🔍 Поиск продукта..." oninput="filterFoods()">
+  <div id="food-list"></div>
+</div>
+
+<!-- СТАТИСТИКА -->
+<div id="page-stats" class="page">
+  <div class="page-title">Статистика</div>
+  <div class="page-sub">За последние 7 дней</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Калории по дням</div>
+    <div class="week-chart" id="week-chart"></div>
+  </div>
+  <div class="stat-grid" id="stat-grid"></div>
+  <div class="card" id="avg-macros"></div>
+</div>
+
+<!-- ПРОФИЛЬ -->
+<div id="page-profile" class="page">
+  <div class="page-title">Профиль</div>
+  <div class="section-title">Цели</div>
+  <div class="card">
+    <div class="field-row"><div class="field-label">Норма калорий (ккал)</div><input class="field-input" id="p-goal" type="number"></div>
+    <div class="field-row"><div class="field-label">Цель по белкам (г)</div><input class="field-input" id="p-protein" type="number"></div>
+    <div class="field-row"><div class="field-label">Цель по жирам (г)</div><input class="field-input" id="p-fat" type="number"></div>
+    <div class="field-row"><div class="field-label">Цель по углеводам (г)</div><input class="field-input" id="p-carbs" type="number"></div>
+  </div>
+  <div class="section-title">Параметры тела</div>
+  <div class="card">
+    <div class="field-row"><div class="field-label">Вес (кг)</div><input class="field-input" id="p-weight" type="number" step="0.1"></div>
+    <div class="field-row"><div class="field-label">Рост (см)</div><input class="field-input" id="p-height" type="number"></div>
+    <div class="field-row"><div class="field-label">Возраст</div><input class="field-input" id="p-age" type="number"></div>
+    <div class="field-row">
+      <div class="field-label">Пол</div>
+      <select class="field-input" id="p-gender">
+        <option value="male">Мужской</option>
+        <option value="female">Женский</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field-label">Активность</div>
+      <select class="field-input" id="p-activity">
+        <option value="1.2">Минимальная (сидячий образ жизни)</option>
+        <option value="1.375">Лёгкая (1-3 тренировки/нед)</option>
+        <option value="1.55" selected>Умеренная (3-5 тренировок/нед)</option>
+        <option value="1.725">Высокая (6-7 тренировок/нед)</option>
+        <option value="1.9">Очень высокая (физ. работа)</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field-label">Цель</div>
+      <select class="field-input" id="p-goal-type">
+        <option value="-500">Похудение (-500 ккал)</option>
+        <option value="0" selected>Поддержание веса</option>
+        <option value="300">Набор массы (+300 ккал)</option>
+      </select>
+    </div>
+    <button class="calc-btn" onclick="calcBMR()">⚡ Рассчитать норму автоматически</button>
+    <button class="save-btn" onclick="saveProfile()">💾 Сохранить профиль</button>
+  </div>
+</div>
+
+<!-- НАВИГАЦИЯ -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('diary',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Дневник
+  </button>
+  <button class="nav-btn" onclick="showPage('add',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    Добавить
+  </button>
+  <button class="nav-btn" onclick="showPage('stats',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Статистика
+  </button>
+  <button class="nav-btn" onclick="showPage('profile',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Профиль
+  </button>
+</nav>
+
+<!-- МОДАЛКА ДОБАВЛЕНИЯ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-food-name"></div>
+    <div class="modal-sub" id="modal-food-meta"></div>
+    <input class="grams-input" type="number" id="modal-grams" value="100" oninput="updatePreview()">
+    <div class="quick-grams">
+      <button class="quick-btn" onclick="setGrams(50)">50г</button>
+      <button class="quick-btn" onclick="setGrams(100)">100г</button>
+      <button class="quick-btn" onclick="setGrams(150)">150г</button>
+      <button class="quick-btn" onclick="setGrams(200)">200г</button>
+    </div>
+    <div class="cal-preview" id="modal-cal-preview">165 ккал</div>
+    <button class="confirm-btn" onclick="confirmAdd()">Добавить</button>
+    <div class="cancel-link" onclick="closeModal()">Отмена</div>
+  </div>
+</div>
+
+<script>
+const MEAL_TYPES = ['Завтрак','Обед','Ужин','Перекус'];
+let profile = {goal:2000,protein_goal:150,fat_goal:70,carbs_goal:250};
+let allFoods = [];
+let selectedFood = null;
+let selectedMeal = 'Обед';
+let activeMealForAdd = 'Обед';
+
+// Telegram WebApp init
+if (window.Telegram && Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+
+// ── Навигация ──────────────────────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (name === 'diary') loadDiary();
+  if (name === 'stats') loadStats();
+  if (name === 'profile') loadProfile();
+  if (name === 'add') initAdd();
+}
+
+// ── API ────────────────────────────────────────────────────────────────────
+async function api(path, options={}) {
+  const r = await fetch(path, {headers:{'Content-Type':'application/json'}, ...options});
+  return r.json();
+}
+
+// ── ДНЕВНИК ───────────────────────────────────────────────────────────────
+async function loadDiary() {
+  profile = await api('/api/profile');
+  const entries = await api('/api/diary');
+  const days = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const now = new Date();
+  document.getElementById('today-label').textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`;
+
+  const totals = {cal:0,protein:0,fat:0,carbs:0};
+  entries.forEach(e => { totals.cal+=e.cal; totals.protein+=e.protein; totals.fat+=e.fat; totals.carbs+=e.carbs; });
+
+  // Кольцо
+  const goal = profile.goal || 2000;
+  const prog = Math.min(totals.cal / goal, 1);
+  const circ = 364.4;
+  document.getElementById('ring-progress').style.strokeDashoffset = circ * (1 - prog);
+  document.getElementById('ring-progress').style.stroke = totals.cal > goal ? '#E24B4A' : '#1D9E75';
+  document.getElementById('ring-cal').textContent = Math.round(totals.cal);
+  document.getElementById('ring-label').textContent = `из ${goal} ккал`;
+
+  // Макро
+  document.getElementById('m-protein').textContent = totals.protein.toFixed(0) + 'г';
+  document.getElementById('m-carbs').textContent = totals.carbs.toFixed(0) + 'г';
+  document.getElementById('m-fat').textContent = totals.fat.toFixed(0) + 'г';
+  document.getElementById('mb-protein').style.width = Math.min(totals.protein/profile.protein_goal*100,100) + '%';
+  document.getElementById('mb-carbs').style.width = Math.min(totals.carbs/profile.carbs_goal*100,100) + '%';
+  document.getElementById('mb-fat').style.width = Math.min(totals.fat/profile.fat_goal*100,100) + '%';
+
+  const rem = goal - Math.round(totals.cal);
+  const remEl = document.getElementById('remaining-text');
+  remEl.style.color = rem >= 0 ? 'var(--primary)' : 'var(--danger)';
+  remEl.textContent = rem >= 0 ? `✓ Осталось: ${rem} ккал` : `⚠ Превышение: ${Math.abs(rem)} ккал`;
+
+  // Приёмы
+  const container = document.getElementById('meals-container');
+  container.innerHTML = '';
+  MEAL_TYPES.forEach(mt => {
+    const items = entries.filter(e => e.meal_type === mt);
+    const mtCal = items.reduce((s,e)=>s+e.cal,0);
+    const div = document.createElement('div');
+    div.className = 'card meal-group';
+    div.innerHTML = `
+      <div class="meal-header">
+        <div>
+          <div class="meal-title">${mt}</div>
+          ${mtCal > 0 ? `<div class="meal-cal">${mtCal} ккал</div>` : ''}
+        </div>
+        <button class="add-meal-btn" onclick="goAddMeal('${mt}')">+ добавить</button>
+      </div>
+      ${items.length === 0 ? '<div class="empty-meal">Нет записей</div>' : ''}
+      ${items.map(e => `
+        <div class="food-item">
+          <div>
+            <div class="food-name">${e.name}</div>
+            <div class="food-meta">${e.grams}г · Б:${e.protein}г Ж:${e.fat}г У:${e.carbs}г</div>
+          </div>
+          <div style="display:flex;align-items:center">
+            <div class="food-cal">${e.cal}</div>
+            <button class="del-btn" onclick="deleteEntry(${e.id})">✕</button>
+          </div>
+        </div>
+      `).join('')}
+    `;
+    container.appendChild(div);
+  });
+}
+
+async function deleteEntry(id) {
+  if (!confirm('Удалить запись?')) return;
+  await api(`/api/diary/${id}`, {method:'DELETE'});
+  loadDiary();
+}
+
+// ── ДОБАВИТЬ ──────────────────────────────────────────────────────────────
+async function initAdd() {
+  if (allFoods.length === 0) allFoods = await api('/api/foods');
+  const tabs = document.getElementById('meal-tabs');
+  tabs.innerHTML = MEAL_TYPES.map(mt =>
+    `<div class="meal-tab ${mt===activeMealForAdd?'active':''}" onclick="selectMealTab(this,'${mt}')">${mt}</div>`
+  ).join('');
+  renderFoodList(allFoods);
+}
+
+function selectMealTab(el, mt) {
+  activeMealForAdd = mt;
+  document.querySelectorAll('.meal-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function filterFoods() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  renderFoodList(allFoods.filter(f => f.name.toLowerCase().includes(q)));
+}
+
+function renderFoodList(foods) {
+  document.getElementById('food-list').innerHTML = foods.map(f => `
+    <div class="food-list-item" onclick="openModal(${f.id})">
+      <div>
+        <div class="food-list-name">${f.name}</div>
+        <div class="food-list-meta">${f.cal} ккал · Б:${f.protein}г Ж:${f.fat}г У:${f.carbs}г · на 100г</div>
+      </div>
+      <div class="add-circle">+</div>
+    </div>
+  `).join('');
+}
+
+function goAddMeal(mt) {
+  activeMealForAdd = mt;
+  showPage('add', document.querySelectorAll('.nav-btn')[1]);
+}
+
+// ── МОДАЛКА ───────────────────────────────────────────────────────────────
+function openModal(foodId) {
+  selectedFood = allFoods.find(f => f.id === foodId);
+  document.getElementById('modal-food-name').textContent = selectedFood.name;
+  document.getElementById('modal-food-meta').textContent =
+    `${selectedFood.cal} ккал · Б:${selectedFood.protein}г Ж:${selectedFood.fat}г У:${selectedFood.carbs}г на 100г`;
+  document.getElementById('modal-grams').value = 100;
+  updatePreview();
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function setGrams(g) {
+  document.getElementById('modal-grams').value = g;
+  updatePreview();
+}
+
+function updatePreview() {
+  const g = parseFloat(document.getElementById('modal-grams').value) || 0;
+  if (!selectedFood) return;
+  const cal = Math.round(selectedFood.cal * g / 100);
+  document.getElementById('modal-cal-preview').textContent = cal + ' ккал';
+}
+
+async function confirmAdd() {
+  const g = parseFloat(document.getElementById('modal-grams').value);
+  if (!g || g <= 0) { alert('Введите количество граммов'); return; }
+  await api('/api/diary', {method:'POST', body: JSON.stringify({
+    food_id: selectedFood.id, grams: g, meal_type: activeMealForAdd
+  })});
+  closeModal();
+  showPage('diary', document.querySelectorAll('.nav-btn')[0]);
+}
+
+// ── СТАТИСТИКА ────────────────────────────────────────────────────────────
+async function loadStats() {
+  profile = await api('/api/profile');
+  const week = await api('/api/week');
+  const cals = week.map(d => d.cal);
+  const maxCal = Math.max(...cals, profile.goal, 1);
+  const goal = profile.goal || 2000;
+
+  const chart = document.getElementById('week-chart');
+  chart.innerHTML = week.map((d, i) => `
+    <div class="bar-wrap">
+      ${d.cal > 0 ? `<div class="bar-val">${d.cal}</div>` : '<div class="bar-val"></div>'}
+      <div class="bar ${i===6?'today':''}" style="height:${Math.round(d.cal/maxCal*80)}px"></div>
+      <div class="bar-label">${d.day}</div>
+    </div>
+  `).join('');
+
+  const activeDays = cals.filter(c => c > 0);
+  const avg = activeDays.length ? Math.round(activeDays.reduce((a,b)=>a+b,0)/activeDays.length) : 0;
+  const daysInNorm = cals.filter(c => c > 0 && c <= goal).length;
+  const total = cals.reduce((a,b)=>a+b,0);
+
+  document.getElementById('stat-grid').innerHTML = [
+    {val: avg + ' ккал', lbl: 'Среднее/день'},
+    {val: daysInNorm + ' из 7', lbl: 'Дней в норме'},
+    {val: total + ' ккал', lbl: 'Всего за неделю'},
+    {val: (goal-avg>0?'+':'') + (goal-avg) + ' ккал', lbl: 'Баланс/день'},
+  ].map(s => `<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-lbl">${s.lbl}</div></div>`).join('');
+}
+
+// ── ПРОФИЛЬ ───────────────────────────────────────────────────────────────
+async function loadProfile() {
+  profile = await api('/api/profile');
+  document.getElementById('p-goal').value = profile.goal || 2000;
+  document.getElementById('p-protein').value = profile.protein_goal || 150;
+  document.getElementById('p-fat').value = profile.fat_goal || 70;
+  document.getElementById('p-carbs').value = profile.carbs_goal || 250;
+  document.getElementById('p-weight').value = profile.weight || '';
+  document.getElementById('p-height').value = profile.height || '';
+  document.getElementById('p-age').value = profile.age || '';
+  if (profile.gender) document.getElementById('p-gender').value = profile.gender;
+  if (profile.activity) document.getElementById('p-activity').value = profile.activity;
+}
+
+function calcBMR() {
+  const w = parseFloat(document.getElementById('p-weight').value);
+  const h = parseFloat(document.getElementById('p-height').value);
+  const a = parseFloat(document.getElementById('p-age').value);
+  const gender = document.getElementById('p-gender').value;
+  const activity = parseFloat(document.getElementById('p-activity').value);
+  const goalAdj = parseInt(document.getElementById('p-goal-type').value);
+  if (!w || !h || !a) { alert('Заполните вес, рост и возраст'); return; }
+  const bmr = gender === 'male' ? 10*w + 6.25*h - 5*a + 5 : 10*w + 6.25*h - 5*a - 161;
+  const tdee = Math.round(bmr * activity + goalAdj);
+  document.getElementById('p-goal').value = tdee;
+  alert(`Ваша норма калорий: ${tdee} ккал/день`);
+}
+
+async function saveProfile() {
+  const data = {
+    goal: parseInt(document.getElementById('p-goal').value),
+    protein_goal: parseInt(document.getElementById('p-protein').value),
+    fat_goal: parseInt(document.getElementById('p-fat').value),
+    carbs_goal: parseInt(document.getElementById('p-carbs').value),
+    weight: parseFloat(document.getElementById('p-weight').value),
+    height: parseFloat(document.getElementById('p-height').value),
+    age: parseInt(document.getElementById('p-age').value),
+    gender: document.getElementById('p-gender').value,
+    activity: document.getElementById('p-activity').value,
+  };
+  await api('/api/profile', {method:'POST', body: JSON.stringify(data)});
+  alert('Профиль сохранён ✓');
+}
+
+// ── Инициализация ──────────────────────────────────────────────────────────
+loadDiary();
+</script>
+</body>
+</html>
