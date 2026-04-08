@@ -320,8 +320,16 @@ function showPage(name, btn) {
 }
 
 // ── API ────────────────────────────────────────────────────────────────────
+function getUserId() {
+  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+    return String(Telegram.WebApp.initDataUnsafe.user.id);
+  }
+  return "default";
+}
+
 async function api(path, options={}) {
-  const r = await fetch(path, {headers:{'Content-Type':'application/json'}, ...options});
+  const headers = {'Content-Type': 'application/json', 'X-User-Id': getUserId()};
+  const r = await fetch(path, {headers, ...options});
   return r.json();
 }
 
