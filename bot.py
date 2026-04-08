@@ -4,7 +4,7 @@ from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-BOT_TOKEN = "8537251737:AAHXHZayr4biHaz-wxX9V_H5z7nsrfLOstI"
+BOT_TOKEN = "8537251737:AAGQEPcBS5byTvfrHBrehhZehuaDh-O4Ehc"
 WEBAPP_URL = "https://calorie-app-56jv.onrender.com"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
