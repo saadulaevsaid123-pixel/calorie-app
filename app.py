@@ -3,8 +3,7 @@ import json, os
 from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder="static")
-DATA_DIR = "user_data"
-os.makedirs(DATA_DIR, exist_ok=True)
+DATA_FILE = "calorie_data.json"
 
 FOODS_DB = [
     {"id":1,  "name":"Куриная грудка",    "cal":165,"protein":31.0,"fat":3.6, "carbs":0.0},
@@ -34,25 +33,18 @@ FOODS_DB = [
     {"id":25, "name":"Орехи грецкие",    "cal":654,"protein":15.0,"fat":65.0,"carbs":14.0},
 ]
 
-def get_user_file(user_id):
-    return os.path.join(DATA_DIR, f"{user_id}.json")
-
-def load_data(user_id):
-    f = get_user_file(user_id)
-    if os.path.exists(f):
-        with open(f, "r", encoding="utf-8") as fp:
-            return json.load(fp)
+def load_data():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
     return {"profile": {"goal":2000,"protein_goal":150,"fat_goal":70,"carbs_goal":250}, "diary":{}}
 
-def save_data(user_id, data):
-    with open(get_user_file(user_id), "w", encoding="utf-8") as fp:
-        json.dump(data, fp, ensure_ascii=False, indent=2)
+def save_data(data):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 def today_str():
     return datetime.now().strftime("%Y-%m-%d")
-
-def get_user_id():
-    return request.headers.get("X-User-Id", "default")
 
 @app.route("/")
 def index():
@@ -66,15 +58,13 @@ def get_foods():
 
 @app.route("/api/diary", methods=["GET"])
 def get_diary():
-    user_id = get_user_id()
-    data = load_data(user_id)
+    data = load_data()
     date = request.args.get("date", today_str())
     return jsonify(data["diary"].get(date, []))
 
 @app.route("/api/diary", methods=["POST"])
 def add_entry():
-    user_id = get_user_id()
-    data = load_data(user_id)
+    data = load_data()
     body = request.json
     food = next((f for f in FOODS_DB if f["id"] == body["food_id"]), None)
     if not food:
@@ -94,35 +84,31 @@ def add_entry():
         "carbs": round(food["carbs"] * grams / 100, 1),
     }
     data["diary"][date].append(entry)
-    save_data(user_id, data)
+    save_data(data)
     return jsonify(entry)
 
 @app.route("/api/diary/<int:entry_id>", methods=["DELETE"])
 def delete_entry(entry_id):
-    user_id = get_user_id()
-    data = load_data(user_id)
+    data = load_data()
     date = today_str()
     data["diary"][date] = [e for e in data["diary"].get(date, []) if e["id"] != entry_id]
-    save_data(user_id, data)
+    save_data(data)
     return jsonify({"ok": True})
 
 @app.route("/api/profile", methods=["GET"])
 def get_profile():
-    user_id = get_user_id()
-    return jsonify(load_data(user_id)["profile"])
+    return jsonify(load_data()["profile"])
 
 @app.route("/api/profile", methods=["POST"])
 def save_profile():
-    user_id = get_user_id()
-    data = load_data(user_id)
+    data = load_data()
     data["profile"] = request.json
-    save_data(user_id, data)
+    save_data(data)
     return jsonify({"ok": True})
 
 @app.route("/api/week")
 def get_week():
-    user_id = get_user_id()
-    data = load_data(user_id)
+    data = load_data()
     result = []
     for i in range(6, -1, -1):
         date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")

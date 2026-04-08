@@ -1,17 +1,9 @@
-"""
-Телеграм-бот для запуска Mini App.
-Установка: pip install python-telegram-bot
-Запуск: python bot.py
-"""
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Вставь сюда свой токен от @BotFather
-BOT_TOKEN = "8537251737:AAGf8M90pV_77TXXku0aUDAXX0lZQPofPW0"
-
-# Вставь сюда публичный URL твоего сервера (после запуска ngrok)
-WEBAPP_URL = "https://calorie-app-56jv.onrender.com"
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+WEBAPP_URL = os.environ.get("WEBAPP_URL")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[
