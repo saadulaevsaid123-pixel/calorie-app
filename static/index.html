@@ -8,24 +8,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #121212;
-    --bg2: #1E1E1E;
-    --bg3: #2A2A2A;
-    --card: #1E1E1E;
-    --card2: #2A2A2A;
-    --green: #00C853;
-    --green-d: #009624;
-    --green-l: rgba(0,200,83,0.15);
-    --text: #FFFFFF;
-    --text2: #9E9E9E;
-    --text3: #616161;
-    --border: #2A2A2A;
-    --orange: #FF6D00;
-    --blue: #2979FF;
-    --red: #FF1744;
+    --bg: #0F0F0F;
+    --bg2: #1A1A1A;
+    --bg3: #252525;
+    --card: #1A1A1A;
+    --green: #00D97E;
+    --green-l: rgba(0,217,126,0.12);
+    --text: #F5F5F5;
+    --text2: #888;
+    --text3: #555;
+    --border: #252525;
+    --orange: #FF8C42;
+    --blue: #4A90D9;
+    --red: #FF4D6D;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { font-family: 'Manrope', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  body { font-family: 'Manrope', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
   /* NAV */
   .nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2); border-top: 1px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
@@ -34,213 +32,177 @@
   .nav-btn svg { width: 22px; height: 22px; }
 
   /* PAGES */
-  .page { display: none; padding-bottom: 90px; min-height: 100vh; }
+  .page { display: none; padding-bottom: 90px; }
   .page.active { display: block; }
 
-  /* HEADER */
-  .page-header { padding: 20px 20px 16px; }
-  .page-header h1 { font-size: 24px; font-weight: 800; color: var(--text); }
-  .page-header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  /* ═══════════════ ДНЕВНИК ═══════════════ */
+  .diary-header { padding: 18px 20px 12px; display: flex; justify-content: space-between; align-items: center; }
+  .diary-header-title { font-size: 22px; font-weight: 800; }
+  .diary-header-date { font-size: 13px; color: var(--text2); font-weight: 500; }
 
-  /* CARDS */
-  .card { background: var(--card); border-radius: 16px; margin: 0 16px 12px; overflow: hidden; }
-  .card-pad { padding: 16px; }
+  /* CALENDAR ROW */
+  .calendar-row { display: flex; gap: 4px; padding: 0 16px 16px; overflow-x: auto; scrollbar-width: none; }
+  .calendar-row::-webkit-scrollbar { display: none; }
+  .cal-item { flex-shrink: 0; width: 42px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .cal-item-day { font-size: 10px; color: var(--text3); font-weight: 700; text-transform: uppercase; }
+  .cal-item-num { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--text2); }
+  .cal-item-num.today { background: var(--green); color: #000; }
+  .cal-item-num.has-data::after { content: ''; display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--green); position: absolute; bottom: -6px; }
+  .cal-item-num.has-data { position: relative; }
 
-  /* DIARY */
-  .diary-top { background: var(--bg2); padding: 16px 20px 20px; }
-  .diary-greeting { font-size: 13px; color: var(--text2); font-weight: 500; margin-bottom: 4px; }
-  .diary-date { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 16px; }
+  /* MACRO BAR */
+  .macro-bar-section { background: var(--bg2); margin: 0 16px 16px; border-radius: 16px; padding: 14px 16px; }
+  .macro-bar-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .macro-bar-cal { font-size: 28px; font-weight: 800; }
+  .macro-bar-cal span { font-size: 14px; color: var(--text2); font-weight: 500; }
+  .macro-bar-remaining { font-size: 12px; font-weight: 600; }
+  .macro-cols { display: flex; gap: 0; }
+  .macro-col { flex: 1; text-align: center; padding: 8px 4px; border-right: 1px solid var(--border); }
+  .macro-col:last-child { border-right: none; }
+  .macro-col-val { font-size: 15px; font-weight: 800; }
+  .macro-col-name { font-size: 10px; color: var(--text2); font-weight: 600; margin-top: 2px; }
+  .macro-col-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .macro-col-fill { height: 100%; border-radius: 2px; }
 
-  /* CALENDAR */
-  .calendar { display: flex; gap: 4px; margin-bottom: 4px; }
-  .cal-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .cal-day-name { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; }
-  .cal-day-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--text2); }
-  .cal-day-num.today { background: var(--green); color: #000; }
+  /* MEAL CARDS */
+  .meals-section { padding: 0 16px; }
+  .meal-card { background: var(--bg2); border-radius: 16px; margin-bottom: 10px; overflow: hidden; }
+  .meal-card-header { display: flex; align-items: center; padding: 14px 16px; cursor: pointer; }
+  .meal-card-icon { font-size: 22px; margin-right: 12px; }
+  .meal-card-info { flex: 1; }
+  .meal-card-title { font-size: 16px; font-weight: 700; }
+  .meal-card-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .meal-card-add { width: 34px; height: 34px; background: var(--green-l); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 22px; line-height: 1; cursor: pointer; border: none; flex-shrink: 0; }
+  .meal-items { border-top: 1px solid var(--border); }
+  .meal-food-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--border); }
+  .meal-food-item:last-child { border-bottom: none; }
+  .meal-food-name { font-size: 13px; font-weight: 600; }
+  .meal-food-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .meal-food-right { display: flex; align-items: center; gap: 8px; }
+  .meal-food-cal { font-size: 13px; font-weight: 700; color: var(--green); }
+  .meal-del-btn { background: rgba(255,77,109,0.1); border: none; color: var(--red); width: 26px; height: 26px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; }
 
-  /* SUMMARY */
-  .summary-row { display: flex; gap: 10px; padding: 16px; }
-  .summary-main { flex: 1; background: var(--card); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .summary-ring { position: relative; width: 110px; height: 110px; margin-bottom: 8px; }
-  .summary-ring svg { transform: rotate(-90deg); }
-  .summary-ring-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
-  .summary-ring-val { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
-  .summary-ring-sub { font-size: 10px; color: var(--text2); font-weight: 600; }
-  .summary-side { display: flex; flex-direction: column; gap: 10px; }
-  .summary-stat { background: var(--card); border-radius: 14px; padding: 12px 14px; flex: 1; min-width: 100px; }
-  .summary-stat-icon { font-size: 18px; margin-bottom: 4px; }
-  .summary-stat-val { font-size: 18px; font-weight: 800; color: var(--text); }
-  .summary-stat-label { font-size: 11px; color: var(--text2); font-weight: 600; margin-top: 1px; }
-
-  /* MACROS */
-  .macro-row { display: flex; gap: 8px; padding: 0 16px 16px; }
-  .macro-card { flex: 1; background: var(--card); border-radius: 14px; padding: 12px 8px; text-align: center; }
-  .macro-val { font-size: 15px; font-weight: 800; color: var(--text); }
-  .macro-name { font-size: 10px; color: var(--text2); font-weight: 600; margin-top: 2px; }
-  .macro-bar { height: 3px; background: var(--bg3); border-radius: 2px; margin-top: 8px; overflow: hidden; }
-  .macro-fill { height: 100%; border-radius: 2px; transition: width .5s; }
-
-  /* MEALS */
-  .section-title { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin: 0 16px 10px; }
-  .meal-card { background: var(--card); border-radius: 16px; margin: 0 16px 10px; overflow: hidden; }
-  .meal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; }
-  .meal-left { display: flex; align-items: center; gap: 12px; }
-  .meal-icon { width: 38px; height: 38px; border-radius: 12px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 20px; }
-  .meal-title { font-size: 15px; font-weight: 700; color: var(--text); }
-  .meal-cal { font-size: 12px; color: var(--text2); font-weight: 500; margin-top: 1px; }
-  .add-meal-btn { background: var(--green-l); color: var(--green); border: none; border-radius: 10px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Manrope', sans-serif; }
-  .meal-divider { height: 1px; background: var(--border); margin: 0 16px; }
-  .food-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; }
-  .food-name { font-size: 13px; font-weight: 600; color: var(--text); }
-  .food-meta { font-size: 11px; color: var(--text2); margin-top: 1px; }
-  .food-right { display: flex; align-items: center; gap: 8px; }
-  .food-cal-badge { background: var(--bg3); color: var(--green); font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
-  .del-btn { background: rgba(255,23,68,0.1); color: var(--red); border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
-  .empty-meal { padding: 12px 16px 14px; font-size: 13px; color: var(--text3); }
-
-  /* ADD PAGE */
-  .add-top { background: var(--bg2); padding: 20px 20px 16px; }
-  .add-top h2 { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 14px; }
+  /* ═══════════════ ДОБАВИТЬ ═══════════════ */
+  .add-header { padding: 18px 20px 14px; }
+  .add-header h2 { font-size: 22px; font-weight: 800; margin-bottom: 14px; }
   .meal-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
   .meal-tab { background: var(--bg3); border: none; border-radius: 20px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--text2); font-family: 'Manrope', sans-serif; transition: all .2s; }
   .meal-tab.active { background: var(--green-l); color: var(--green); }
-  .search-wrap { padding: 14px 16px 8px; }
-  .search-input { width: 100%; padding: 13px 16px; border: none; border-radius: 14px; font-size: 14px; background: var(--card); outline: none; font-family: 'Manrope', sans-serif; font-weight: 500; color: var(--text); }
+  .search-wrap { padding: 0 16px 10px; }
+  .search-input { width: 100%; padding: 13px 16px; border: none; border-radius: 14px; font-size: 14px; background: var(--bg2); outline: none; font-family: 'Manrope', sans-serif; font-weight: 500; color: var(--text); }
   .search-input::placeholder { color: var(--text3); }
   .food-list { padding: 0 16px; }
   .food-list-item { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
-  .food-list-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .food-list-name { font-size: 14px; font-weight: 700; }
   .food-list-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
-  .add-circle { width: 34px; height: 34px; background: var(--green-l); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--green); font-size: 22px; line-height: 1; }
+  .food-add-btn { width: 32px; height: 32px; background: var(--green-l); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 20px; flex-shrink: 0; }
 
-  /* MODAL */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none; align-items: flex-end; z-index: 200; backdrop-filter: blur(4px); }
-  .modal-overlay.open { display: flex; }
-  .modal { background: var(--bg2); border-radius: 28px 28px 0 0; padding: 12px 20px 40px; width: 100%; }
-  .modal-handle { width: 36px; height: 4px; background: var(--bg3); border-radius: 2px; margin: 0 auto 20px; }
-  .modal-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
-  .modal-sub { font-size: 13px; color: var(--text2); font-weight: 500; margin-bottom: 20px; }
-  .grams-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-  .grams-input { flex: 1; text-align: center; font-size: 36px; font-weight: 800; border: 2px solid var(--bg3); border-radius: 16px; padding: 14px; outline: none; font-family: 'Manrope', sans-serif; color: var(--text); background: var(--bg3); transition: border .2s; }
-  .grams-input:focus { border-color: var(--green); }
-  .grams-unit { font-size: 16px; font-weight: 700; color: var(--text2); }
-  .quick-grams { display: flex; gap: 8px; margin-bottom: 16px; }
-  .quick-btn { flex: 1; background: var(--bg3); border: none; border-radius: 12px; padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Manrope', sans-serif; color: var(--text2); }
-  .cal-preview { text-align: center; font-size: 36px; font-weight: 800; color: var(--green); margin-bottom: 20px; }
-  .cal-preview span { font-size: 16px; color: var(--text2); font-weight: 600; }
-  .confirm-btn { width: 100%; background: var(--green); color: #000; border: none; border-radius: 16px; padding: 16px; font-size: 16px; font-weight: 800; cursor: pointer; font-family: 'Manrope', sans-serif; }
-  .cancel-link { text-align: center; color: var(--text2); font-size: 13px; font-weight: 600; margin-top: 12px; cursor: pointer; }
-
-  /* STATS */
-  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 12px; }
-  .stat-card { background: var(--card); border-radius: 16px; padding: 16px; }
-  .stat-val { font-size: 22px; font-weight: 800; color: var(--text); }
-  .stat-lbl { font-size: 11px; color: var(--text2); font-weight: 600; margin-top: 4px; }
-  .week-chart { display: flex; align-items: flex-end; gap: 6px; height: 100px; padding: 0 16px; margin-bottom: 8px; }
+  /* ═══════════════ СТАТИСТИКА ═══════════════ */
+  .stats-header { padding: 18px 20px 14px; }
+  .stats-header h2 { font-size: 22px; font-weight: 800; }
+  .stats-header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .stats-card { background: var(--bg2); border-radius: 16px; margin: 0 16px 12px; padding: 16px; }
+  .week-chart { display: flex; align-items: flex-end; gap: 6px; height: 90px; margin: 12px 0 8px; }
   .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
-  .bar { width: 100%; border-radius: 6px 6px 0 0; background: var(--bg3); min-height: 4px; }
+  .bar { width: 100%; border-radius: 5px 5px 0 0; background: var(--bg3); min-height: 4px; }
   .bar.today { background: var(--green); }
-  .bar-label { font-size: 10px; color: var(--text3); font-weight: 600; }
-  .macro-stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 0 16px; }
-  .macro-stat-label { font-size: 13px; font-weight: 600; color: var(--text2); width: 80px; flex-shrink: 0; }
+  .bar-lbl { font-size: 10px; color: var(--text3); font-weight: 600; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 16px 12px; }
+  .stat-card { background: var(--bg2); border-radius: 14px; padding: 14px; }
+  .stat-val { font-size: 20px; font-weight: 800; }
+  .stat-lbl { font-size: 11px; color: var(--text2); font-weight: 600; margin-top: 3px; }
+  .macro-row-stats { padding: 0 16px; }
+  .macro-stat { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .macro-stat-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .macro-stat-name { font-size: 13px; font-weight: 600; color: var(--text2); width: 72px; }
   .macro-stat-bar { flex: 1; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
   .macro-stat-fill { height: 100%; border-radius: 3px; }
-  .macro-stat-val { font-size: 13px; font-weight: 700; color: var(--text); width: 40px; text-align: right; }
+  .macro-stat-val { font-size: 13px; font-weight: 700; width: 36px; text-align: right; }
 
-  /* PROFILE */
-  .profile-top { background: var(--bg2); padding: 20px 20px 16px; }
-  .profile-user { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-  .profile-name { font-size: 22px; font-weight: 800; color: var(--text); }
-  .profile-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
-  .profile-avatar { width: 52px; height: 52px; background: var(--bg3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-  .quick-stats { display: flex; gap: 8px; margin-bottom: 4px; }
-  .quick-stat { flex: 1; background: var(--bg3); border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 8px; }
-  .quick-stat-icon { font-size: 20px; }
-  .quick-stat-val { font-size: 15px; font-weight: 800; color: var(--text); }
-  .quick-stat-lbl { font-size: 10px; color: var(--text2); font-weight: 600; }
-  .settings-group { background: var(--card); border-radius: 16px; margin: 0 16px 12px; overflow: hidden; }
-  .settings-item { display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
-  .settings-item:last-child { border-bottom: none; }
+  /* ═══════════════ ПРОФИЛЬ ═══════════════ */
+  .profile-header { padding: 18px 20px 16px; }
+  .profile-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .profile-name { font-size: 22px; font-weight: 800; }
+  .profile-type { font-size: 12px; color: var(--text2); margin-top: 3px; font-style: italic; }
+  .profile-avatar { width: 50px; height: 50px; background: var(--bg3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .profile-quick { display: flex; gap: 8px; }
+  .profile-quick-btn { flex: 1; background: var(--bg3); border-radius: 14px; padding: 12px 10px; display: flex; align-items: center; gap: 8px; }
+  .profile-quick-icon { font-size: 18px; }
+  .profile-quick-val { font-size: 14px; font-weight: 800; }
+  .profile-quick-lbl { font-size: 10px; color: var(--text2); font-weight: 600; }
+  .settings-group { background: var(--bg2); border-radius: 16px; margin: 12px 16px 0; overflow: hidden; }
+  .settings-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .settings-row:last-child { border-bottom: none; }
   .settings-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-  .settings-label { font-size: 15px; font-weight: 600; color: var(--text); flex: 1; }
-  .settings-arrow { color: var(--text3); font-size: 16px; }
-  .settings-val { font-size: 14px; color: var(--text2); font-weight: 500; margin-right: 8px; }
+  .settings-label { font-size: 15px; font-weight: 600; flex: 1; }
+  .settings-right { font-size: 13px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+  .settings-arrow { color: var(--text3); font-size: 18px; }
 
-  /* EDIT MODAL */
-  .edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); display: none; align-items: flex-end; z-index: 300; backdrop-filter: blur(4px); }
-  .edit-overlay.open { display: flex; }
-  .edit-modal { background: var(--bg2); border-radius: 28px 28px 0 0; padding: 12px 20px 40px; width: 100%; max-height: 85vh; overflow-y: auto; }
-  .edit-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 16px; }
-  .field-row { margin-bottom: 12px; }
-  .field-label { font-size: 12px; color: var(--text2); font-weight: 600; margin-bottom: 6px; }
-  .field-input { width: 100%; padding: 13px 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; outline: none; font-family: 'Manrope', sans-serif; color: var(--text); background: var(--bg3); }
-  .save-btn { width: 100%; background: var(--green); color: #000; border: none; border-radius: 14px; padding: 15px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: 'Manrope', sans-serif; margin-top: 8px; }
-  .calc-btn { width: 100%; background: var(--green-l); color: var(--green); border: none; border-radius: 14px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Manrope', sans-serif; margin-bottom: 10px; }
+  /* ═══════════════ MODALS ═══════════════ */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: none; align-items: flex-end; z-index: 200; backdrop-filter: blur(6px); }
+  .overlay.open { display: flex; }
+  .bottom-sheet { background: var(--bg2); border-radius: 24px 24px 0 0; padding: 12px 20px 44px; width: 100%; max-height: 85vh; overflow-y: auto; }
+  .sheet-handle { width: 36px; height: 4px; background: var(--bg3); border-radius: 2px; margin: 0 auto 18px; }
+  .sheet-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+  .sheet-sub { font-size: 12px; color: var(--text2); margin-bottom: 18px; }
+  .grams-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .grams-input { flex: 1; text-align: center; font-size: 40px; font-weight: 800; border: 2px solid var(--bg3); border-radius: 14px; padding: 12px; outline: none; font-family: 'Manrope', sans-serif; color: var(--text); background: var(--bg3); transition: border .2s; }
+  .grams-input:focus { border-color: var(--green); }
+  .grams-unit { font-size: 15px; font-weight: 700; color: var(--text2); }
+  .quick-g { display: flex; gap: 8px; margin-bottom: 14px; }
+  .quick-g-btn { flex: 1; background: var(--bg3); border: none; border-radius: 10px; padding: 9px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Manrope', sans-serif; color: var(--text2); }
+  .cal-preview { text-align: center; font-size: 38px; font-weight: 800; color: var(--green); margin-bottom: 18px; }
+  .cal-preview small { font-size: 15px; color: var(--text2); font-weight: 600; }
+  .green-btn { width: 100%; background: var(--green); color: #000; border: none; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 800; cursor: pointer; font-family: 'Manrope', sans-serif; }
+  .ghost-btn { width: 100%; background: none; border: none; color: var(--text2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Manrope', sans-serif; margin-top: 12px; }
+  .field-group { margin-bottom: 12px; }
+  .field-lbl { font-size: 11px; color: var(--text2); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .field-inp { width: 100%; padding: 13px 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; outline: none; font-family: 'Manrope', sans-serif; color: var(--text); background: var(--bg3); }
 </style>
 </head>
 <body>
 
 <!-- ДНЕВНИК -->
 <div id="page-diary" class="page active">
-  <div class="diary-top">
-    <div class="diary-greeting">Привет 👋</div>
-    <div class="diary-date" id="today-label"></div>
-    <div class="calendar" id="calendar"></div>
-  </div>
-
-  <div class="summary-row">
-    <div class="summary-main">
-      <div class="summary-ring">
-        <svg width="110" height="110" viewBox="0 0 110 110">
-          <circle cx="55" cy="55" r="46" fill="none" stroke="#2A2A2A" stroke-width="10"/>
-          <circle id="ring-progress" cx="55" cy="55" r="46" fill="none" stroke="#00C853" stroke-width="10" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289" transform="rotate(-90 55 55)" style="transition:.6s"/>
-        </svg>
-        <div class="summary-ring-center">
-          <div class="summary-ring-val" id="ring-remaining">0</div>
-          <div class="summary-ring-sub">осталось</div>
-        </div>
-      </div>
-      <div style="font-size:12px;color:var(--text2);font-weight:600" id="goal-display">цель 2000 ккал</div>
-    </div>
-    <div class="summary-side">
-      <div class="summary-stat">
-        <div class="summary-stat-icon">🍽</div>
-        <div class="summary-stat-val" id="eaten-val">0</div>
-        <div class="summary-stat-label">съедено ккал</div>
-      </div>
-      <div class="summary-stat">
-        <div class="summary-stat-icon">⚖️</div>
-        <div class="summary-stat-val" id="balance-val">0</div>
-        <div class="summary-stat-label" id="balance-lbl">дефицит ккал</div>
-      </div>
+  <div class="diary-header">
+    <div>
+      <div class="diary-header-title">Сегодня</div>
+      <div class="diary-header-date" id="today-label"></div>
     </div>
   </div>
 
-  <div class="macro-row">
-    <div class="macro-card">
-      <div class="macro-val" id="m-protein">0г</div>
-      <div class="macro-name">Белки</div>
-      <div class="macro-bar"><div class="macro-fill" id="mb-protein" style="background:#00C853;width:0%"></div></div>
+  <div class="calendar-row" id="calendar"></div>
+
+  <div class="macro-bar-section">
+    <div class="macro-bar-top">
+      <div class="macro-bar-cal"><span>Ккал </span><span id="eaten-val">0</span></div>
+      <div class="macro-bar-remaining" id="remaining-text" style="color:var(--green)">осталось 0</div>
     </div>
-    <div class="macro-card">
-      <div class="macro-val" id="m-carbs">0г</div>
-      <div class="macro-name">Углеводы</div>
-      <div class="macro-bar"><div class="macro-fill" id="mb-carbs" style="background:#FF6D00;width:0%"></div></div>
-    </div>
-    <div class="macro-card">
-      <div class="macro-val" id="m-fat">0г</div>
-      <div class="macro-name">Жиры</div>
-      <div class="macro-bar"><div class="macro-fill" id="mb-fat" style="background:#2979FF;width:0%"></div></div>
+    <div class="macro-cols">
+      <div class="macro-col">
+        <div class="macro-col-val" id="m-protein">0г</div>
+        <div class="macro-col-name">Белки</div>
+        <div class="macro-col-bar"><div class="macro-col-fill" id="mb-protein" style="background:var(--green);width:0%"></div></div>
+      </div>
+      <div class="macro-col">
+        <div class="macro-col-val" id="m-carbs">0г</div>
+        <div class="macro-col-name">Углеводы</div>
+        <div class="macro-col-bar"><div class="macro-col-fill" id="mb-carbs" style="background:var(--orange);width:0%"></div></div>
+      </div>
+      <div class="macro-col">
+        <div class="macro-col-val" id="m-fat">0г</div>
+        <div class="macro-col-name">Жиры</div>
+        <div class="macro-col-bar"><div class="macro-col-fill" id="mb-fat" style="background:var(--blue);width:0%"></div></div>
+      </div>
     </div>
   </div>
 
-  <div class="section-title">Приёмы пищи</div>
-  <div id="meals-container"></div>
+  <div class="meals-section" id="meals-container"></div>
 </div>
 
 <!-- ДОБАВИТЬ -->
 <div id="page-add" class="page">
-  <div class="add-top">
+  <div class="add-header">
     <h2>Добавить еду</h2>
     <div class="meal-tabs" id="meal-tabs"></div>
   </div>
@@ -252,69 +214,61 @@
 
 <!-- СТАТИСТИКА -->
 <div id="page-stats" class="page">
-  <div class="page-header">
-    <h1>Статистика</h1>
+  <div class="stats-header">
+    <h2>Статистика</h2>
     <p>За последние 7 дней</p>
   </div>
-  <div class="card card-pad" style="margin-bottom:12px">
-    <div class="section-title" style="margin:0 0 12px">Калории по дням</div>
-    <div class="week-chart" id="week-chart" style="padding:0"></div>
+  <div class="stats-card">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Калории</div>
+    <div class="week-chart" id="week-chart"></div>
   </div>
   <div class="stat-grid" id="stat-grid"></div>
-  <div style="padding:0 16px 8px;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Среднее по макро</div>
-  <div id="avg-macros"></div>
+  <div class="macro-row-stats" id="avg-macros"></div>
 </div>
 
 <!-- ПРОФИЛЬ -->
 <div id="page-profile" class="page">
-  <div class="profile-top">
-    <div class="profile-user">
+  <div class="profile-header">
+    <div class="profile-top-row">
       <div>
         <div class="profile-name" id="profile-name-display">Пользователь</div>
-        <div class="profile-sub">Bесплатный аккаунт</div>
+        <div class="profile-type">Бесплатный аккаунт</div>
       </div>
       <div class="profile-avatar">👤</div>
     </div>
-    <div class="quick-stats">
-      <div class="quick-stat">
-        <div class="quick-stat-icon">🍽</div>
+    <div class="profile-quick">
+      <div class="profile-quick-btn">
+        <div class="profile-quick-icon">🍽</div>
         <div>
-          <div class="quick-stat-val" id="qs-cal">0</div>
-          <div class="quick-stat-lbl">ккал сегодня</div>
+          <div class="profile-quick-val" id="qs-cal">0</div>
+          <div class="profile-quick-lbl">ккал сегодня</div>
         </div>
       </div>
-      <div class="quick-stat">
-        <div class="quick-stat-icon">⚖️</div>
+      <div class="profile-quick-btn">
+        <div class="profile-quick-icon">⚖️</div>
         <div>
-          <div class="quick-stat-val" id="qs-weight">—</div>
-          <div class="quick-stat-lbl">кг</div>
+          <div class="profile-quick-val" id="qs-weight">—</div>
+          <div class="profile-quick-lbl">кг</div>
         </div>
       </div>
     </div>
   </div>
 
-  <div style="height:12px"></div>
-
   <div class="settings-group">
-    <div class="settings-item" onclick="openEdit('goals')">
-      <div class="settings-icon" style="background:rgba(0,200,83,0.15)">🎯</div>
+    <div class="settings-row" onclick="openSheet('goals')">
+      <div class="settings-icon" style="background:rgba(0,217,126,0.12)">🎯</div>
       <div class="settings-label">Цели питания</div>
-      <div class="settings-val" id="s-goal">2000 ккал</div>
-      <div class="settings-arrow">›</div>
+      <div class="settings-right"><span id="s-goal">2000 ккал</span><span class="settings-arrow">›</span></div>
     </div>
-    <div class="settings-item" onclick="openEdit('body')">
-      <div class="settings-icon" style="background:rgba(41,121,255,0.15)">💪</div>
+    <div class="settings-row" onclick="openSheet('body')">
+      <div class="settings-icon" style="background:rgba(74,144,217,0.12)">💪</div>
       <div class="settings-label">Параметры тела</div>
-      <div class="settings-val" id="s-body">—</div>
-      <div class="settings-arrow">›</div>
+      <div class="settings-right"><span id="s-body">—</span><span class="settings-arrow">›</span></div>
     </div>
-  </div>
-
-  <div class="settings-group">
-    <div class="settings-item" onclick="openEdit('calc')">
-      <div class="settings-icon" style="background:rgba(255,109,0,0.15)">⚡</div>
+    <div class="settings-row" onclick="openSheet('calc')">
+      <div class="settings-icon" style="background:rgba(255,140,66,0.12)">⚡</div>
       <div class="settings-label">Рассчитать норму</div>
-      <div class="settings-arrow">›</div>
+      <div class="settings-right"><span class="settings-arrow">›</span></div>
     </div>
   </div>
 </div>
@@ -339,34 +293,34 @@
   </button>
 </nav>
 
-<!-- ADD MODAL -->
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="modal-food-name"></div>
-    <div class="modal-sub" id="modal-food-meta"></div>
-    <div class="grams-wrap">
+<!-- ADD FOOD MODAL -->
+<div class="overlay" id="add-modal">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="modal-food-name"></div>
+    <div class="sheet-sub" id="modal-food-meta"></div>
+    <div class="grams-row">
       <input class="grams-input" type="number" inputmode="numeric" id="modal-grams" value="100" oninput="updatePreview()">
       <div class="grams-unit">г</div>
     </div>
-    <div class="quick-grams">
-      <button class="quick-btn" onclick="setGrams(50)">50г</button>
-      <button class="quick-btn" onclick="setGrams(100)">100г</button>
-      <button class="quick-btn" onclick="setGrams(150)">150г</button>
-      <button class="quick-btn" onclick="setGrams(200)">200г</button>
+    <div class="quick-g">
+      <button class="quick-g-btn" onclick="setGrams(50)">50г</button>
+      <button class="quick-g-btn" onclick="setGrams(100)">100г</button>
+      <button class="quick-g-btn" onclick="setGrams(150)">150г</button>
+      <button class="quick-g-btn" onclick="setGrams(200)">200г</button>
     </div>
-    <div class="cal-preview" id="modal-cal-preview">0 <span>ккал</span></div>
-    <button class="confirm-btn" onclick="confirmAdd()">✓ Добавить</button>
-    <div class="cancel-link" onclick="closeModal()">Отмена</div>
+    <div class="cal-preview" id="modal-cal">0 <small>ккал</small></div>
+    <button class="green-btn" onclick="confirmAdd()">✓ Добавить</button>
+    <button class="ghost-btn" onclick="closeModal('add-modal')">Отмена</button>
   </div>
 </div>
 
-<!-- EDIT MODAL -->
-<div class="edit-overlay" id="edit-overlay">
-  <div class="edit-modal">
-    <div class="modal-handle"></div>
-    <div class="edit-title" id="edit-title"></div>
-    <div id="edit-content"></div>
+<!-- PROFILE SHEET -->
+<div class="overlay" id="profile-sheet">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-title"></div>
+    <div id="sheet-content"></div>
   </div>
 </div>
 
@@ -376,33 +330,30 @@ const MEAL_ICONS = {'Завтрак':'🌅','Обед':'☀️','Ужин':'🌙
 let profile = {goal:2000,protein_goal:150,fat_goal:70,carbs_goal:250};
 let allFoods = [];
 let selectedFood = null;
-let activeMealForAdd = 'Обед';
-let todayCal = 0;
+let activeMeal = 'Обед';
 
 if (window.Telegram && Telegram.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
 
 function getUserId() {
-  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user)
     return String(Telegram.WebApp.initDataUnsafe.user.id);
-  }
   return "default";
 }
 
-async function api(path, options={}) {
-  const headers = {'Content-Type': 'application/json', 'X-User-Id': getUserId()};
-  const r = await fetch(path, {headers, ...options});
+async function api(path, opts={}) {
+  const r = await fetch(path, {headers:{'Content-Type':'application/json','X-User-Id':getUserId()}, ...opts});
   return r.json();
 }
 
 function showPage(name, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  if (name === 'diary') loadDiary();
-  if (name === 'stats') loadStats();
-  if (name === 'profile') loadProfile();
-  if (name === 'add') initAdd();
+  if (name==='diary') loadDiary();
+  if (name==='stats') loadStats();
+  if (name==='profile') loadProfile();
+  if (name==='add') initAdd();
 }
 
 function buildCalendar() {
@@ -410,13 +361,12 @@ function buildCalendar() {
   const days = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
   const cal = document.getElementById('calendar');
   cal.innerHTML = '';
-  for (let i = -3; i <= 3; i++) {
-    const d = new Date(now);
-    d.setDate(now.getDate() + i);
-    const wrap = document.createElement('div');
-    wrap.className = 'cal-day';
-    wrap.innerHTML = `<div class="cal-day-name">${days[d.getDay()]}</div><div class="cal-day-num${i===0?' today':''}">${d.getDate()}</div>`;
-    cal.appendChild(wrap);
+  for (let i=-3; i<=3; i++) {
+    const d = new Date(now); d.setDate(now.getDate()+i);
+    const el = document.createElement('div');
+    el.className = 'cal-item';
+    el.innerHTML = `<div class="cal-item-day">${days[d.getDay()]}</div><div class="cal-item-num${i===0?' today':''}">${d.getDate()}</div>`;
+    cal.appendChild(el);
   }
 }
 
@@ -429,171 +379,158 @@ async function loadDiary() {
   document.getElementById('today-label').textContent = `${dayNames[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`;
   buildCalendar();
 
-  const totals = {cal:0,protein:0,fat:0,carbs:0};
-  entries.forEach(e => { totals.cal+=e.cal; totals.protein+=e.protein; totals.fat+=e.fat; totals.carbs+=e.carbs; });
-  todayCal = Math.round(totals.cal);
+  const t = {cal:0,protein:0,fat:0,carbs:0};
+  entries.forEach(e => { t.cal+=e.cal; t.protein+=e.protein; t.fat+=e.fat; t.carbs+=e.carbs; });
+  const goal = profile.goal||2000;
+  const rem = goal - Math.round(t.cal);
 
-  const goal = profile.goal || 2000;
-  const prog = Math.min(totals.cal / goal, 1);
-  const circ = 289;
-  document.getElementById('ring-progress').style.strokeDashoffset = circ * (1 - prog);
-  document.getElementById('ring-progress').style.stroke = totals.cal > goal ? '#FF1744' : '#00C853';
-
-  const remaining = goal - Math.round(totals.cal);
-  document.getElementById('ring-remaining').textContent = Math.abs(remaining);
-  document.getElementById('goal-display').textContent = `цель ${goal} ккал`;
-  document.getElementById('eaten-val').textContent = Math.round(totals.cal);
-  document.getElementById('balance-val').textContent = Math.abs(remaining);
-  document.getElementById('balance-lbl').textContent = remaining >= 0 ? 'дефицит ккал' : 'превышение';
-  document.getElementById('balance-val').style.color = remaining >= 0 ? '#00C853' : '#FF1744';
-
-  document.getElementById('m-protein').textContent = totals.protein.toFixed(0) + 'г';
-  document.getElementById('m-carbs').textContent = totals.carbs.toFixed(0) + 'г';
-  document.getElementById('m-fat').textContent = totals.fat.toFixed(0) + 'г';
-  document.getElementById('mb-protein').style.width = Math.min(totals.protein/(profile.protein_goal||150)*100,100) + '%';
-  document.getElementById('mb-carbs').style.width = Math.min(totals.carbs/(profile.carbs_goal||250)*100,100) + '%';
-  document.getElementById('mb-fat').style.width = Math.min(totals.fat/(profile.fat_goal||70)*100,100) + '%';
+  document.getElementById('eaten-val').textContent = Math.round(t.cal);
+  document.getElementById('remaining-text').textContent = rem>=0 ? `осталось ${rem}` : `превышение ${Math.abs(rem)}`;
+  document.getElementById('remaining-text').style.color = rem>=0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('m-protein').textContent = t.protein.toFixed(0)+'г';
+  document.getElementById('m-carbs').textContent = t.carbs.toFixed(0)+'г';
+  document.getElementById('m-fat').textContent = t.fat.toFixed(0)+'г';
+  document.getElementById('mb-protein').style.width = Math.min(t.protein/(profile.protein_goal||150)*100,100)+'%';
+  document.getElementById('mb-carbs').style.width = Math.min(t.carbs/(profile.carbs_goal||250)*100,100)+'%';
+  document.getElementById('mb-fat').style.width = Math.min(t.fat/(profile.fat_goal||70)*100,100)+'%';
 
   const container = document.getElementById('meals-container');
   container.innerHTML = '';
   MEAL_TYPES.forEach(mt => {
-    const items = entries.filter(e => e.meal_type === mt);
+    const items = entries.filter(e=>e.meal_type===mt);
     const mtCal = items.reduce((s,e)=>s+e.cal,0);
     const card = document.createElement('div');
     card.className = 'meal-card';
     card.innerHTML = `
-      <div class="meal-header">
-        <div class="meal-left">
-          <div class="meal-icon">${MEAL_ICONS[mt]}</div>
-          <div>
-            <div class="meal-title">${mt}</div>
-            <div class="meal-cal">${mtCal > 0 ? mtCal + ' ккал' : 'Нет записей'}</div>
-          </div>
+      <div class="meal-card-header">
+        <div class="meal-card-icon">${MEAL_ICONS[mt]}</div>
+        <div class="meal-card-info">
+          <div class="meal-card-title">${mt}</div>
+          <div class="meal-card-sub">${mtCal>0?mtCal+' ккал':'Нет записей'}</div>
         </div>
-        <button class="add-meal-btn" onclick="goAddMeal('${mt}')">+ добавить</button>
+        <button class="meal-card-add" onclick="goAdd('${mt}')">+</button>
       </div>
-      ${items.length > 0 ? '<div class="meal-divider"></div>' : ''}
-      ${items.map(e => `
-        <div class="food-item">
+      ${items.length>0?`<div class="meal-items">${items.map(e=>`
+        <div class="meal-food-item">
           <div>
-            <div class="food-name">${e.name}</div>
-            <div class="food-meta">${e.grams}г · Б:${e.protein}г Ж:${e.fat}г У:${e.carbs}г</div>
+            <div class="meal-food-name">${e.name}</div>
+            <div class="meal-food-meta">${e.grams}г · Б:${e.protein}г У:${e.carbs}г Ж:${e.fat}г</div>
           </div>
-          <div class="food-right">
-            <div class="food-cal-badge">${e.cal}</div>
-            <button class="del-btn" onclick="deleteEntry(${e.id})">✕</button>
+          <div class="meal-food-right">
+            <div class="meal-food-cal">${e.cal}</div>
+            <button class="meal-del-btn" onclick="delEntry(${e.id})">✕</button>
           </div>
         </div>
-      `).join('')}
+      `).join('')}</div>`:''}
     `;
     container.appendChild(card);
   });
 }
 
-async function deleteEntry(id) {
+async function delEntry(id) {
   if (!confirm('Удалить?')) return;
-  await api(`/api/diary/${id}`, {method:'DELETE'});
+  await api(`/api/diary/${id}`,{method:'DELETE'});
   loadDiary();
 }
 
-async function initAdd() {
-  if (allFoods.length === 0) allFoods = await api('/api/foods');
-  const tabs = document.getElementById('meal-tabs');
-  tabs.innerHTML = MEAL_TYPES.map(mt =>
-    `<div class="meal-tab ${mt===activeMealForAdd?'active':''}" onclick="selectMealTab(this,'${mt}')">${MEAL_ICONS[mt]} ${mt}</div>`
-  ).join('');
-  renderFoodList(allFoods);
+function goAdd(mt) {
+  activeMeal = mt;
+  showPage('add', document.querySelectorAll('.nav-btn')[1]);
 }
 
-function selectMealTab(el, mt) {
-  activeMealForAdd = mt;
-  document.querySelectorAll('.meal-tab').forEach(t => t.classList.remove('active'));
+async function initAdd() {
+  if (!allFoods.length) allFoods = await api('/api/foods');
+  document.getElementById('meal-tabs').innerHTML = MEAL_TYPES.map(mt=>
+    `<div class="meal-tab ${mt===activeMeal?'active':''}" onclick="selTab(this,'${mt}')">${MEAL_ICONS[mt]} ${mt}</div>`
+  ).join('');
+  renderFoods(allFoods);
+}
+
+function selTab(el,mt) {
+  activeMeal=mt;
+  document.querySelectorAll('.meal-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
 }
 
 function filterFoods() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  renderFoodList(allFoods.filter(f => f.name.toLowerCase().includes(q)));
+  const q=document.getElementById('search-input').value.toLowerCase();
+  renderFoods(allFoods.filter(f=>f.name.toLowerCase().includes(q)));
 }
 
-function renderFoodList(foods) {
-  document.getElementById('food-list').innerHTML = foods.map(f => `
+function renderFoods(foods) {
+  document.getElementById('food-list').innerHTML = foods.map(f=>`
     <div class="food-list-item" onclick="openModal(${f.id})">
       <div>
         <div class="food-list-name">${f.name}</div>
-        <div class="food-list-meta">${f.cal} ккал · Б:${f.protein}г Ж:${f.fat}г У:${f.carbs}г · на 100г</div>
+        <div class="food-list-meta">${f.cal} ккал · Б:${f.protein}г У:${f.carbs}г Ж:${f.fat}г · на 100г</div>
       </div>
-      <div class="add-circle">+</div>
+      <div class="food-add-btn">+</div>
     </div>
   `).join('');
 }
 
-function goAddMeal(mt) {
-  activeMealForAdd = mt;
-  showPage('add', document.querySelectorAll('.nav-btn')[1]);
-}
-
-function openModal(foodId) {
-  selectedFood = allFoods.find(f => f.id === foodId);
+function openModal(id) {
+  selectedFood = allFoods.find(f=>f.id===id);
   document.getElementById('modal-food-name').textContent = selectedFood.name;
-  document.getElementById('modal-food-meta').textContent = `${selectedFood.cal} ккал · Б:${selectedFood.protein}г Ж:${selectedFood.fat}г У:${selectedFood.carbs}г на 100г`;
+  document.getElementById('modal-food-meta').textContent = `${selectedFood.cal} ккал · Б:${selectedFood.protein}г У:${selectedFood.carbs}г Ж:${selectedFood.fat}г на 100г`;
   document.getElementById('modal-grams').value = 100;
   updatePreview();
-  document.getElementById('modal').classList.add('open');
+  document.getElementById('add-modal').classList.add('open');
 }
 
-function closeModal() { document.getElementById('modal').classList.remove('open'); }
-function setGrams(g) { document.getElementById('modal-grams').value = g; updatePreview(); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function setGrams(g) { document.getElementById('modal-grams').value=g; updatePreview(); }
 
 function updatePreview() {
-  const g = parseFloat(document.getElementById('modal-grams').value) || 0;
+  const g = parseFloat(document.getElementById('modal-grams').value)||0;
   if (!selectedFood) return;
-  document.getElementById('modal-cal-preview').innerHTML = Math.round(selectedFood.cal * g / 100) + ' <span>ккал</span>';
+  document.getElementById('modal-cal').innerHTML = Math.round(selectedFood.cal*g/100)+' <small>ккал</small>';
 }
 
 async function confirmAdd() {
   const g = parseFloat(document.getElementById('modal-grams').value);
-  if (!g || g <= 0) { alert('Введите количество граммов'); return; }
-  await api('/api/diary', {method:'POST', body: JSON.stringify({food_id: selectedFood.id, grams: g, meal_type: activeMealForAdd})});
-  closeModal();
-  showPage('diary', document.querySelectorAll('.nav-btn')[0]);
+  if (!g||g<=0) { alert('Введите граммы'); return; }
+  await api('/api/diary',{method:'POST',body:JSON.stringify({food_id:selectedFood.id,grams:g,meal_type:activeMeal})});
+  closeModal('add-modal');
+  showPage('diary',document.querySelectorAll('.nav-btn')[0]);
 }
 
 async function loadStats() {
   profile = await api('/api/profile');
   const week = await api('/api/week');
-  const cals = week.map(d => d.cal);
-  const maxCal = Math.max(...cals, profile.goal, 1);
-  const goal = profile.goal || 2000;
+  const cals = week.map(d=>d.cal);
+  const maxCal = Math.max(...cals,profile.goal,1);
+  const goal = profile.goal||2000;
 
-  document.getElementById('week-chart').innerHTML = week.map((d, i) => `
+  document.getElementById('week-chart').innerHTML = week.map((d,i)=>`
     <div class="bar-wrap">
-      <div class="bar ${i===6?'today':''}" style="height:${Math.round(d.cal/maxCal*80)}px"></div>
-      <div class="bar-label">${d.day}</div>
+      <div class="bar ${i===6?'today':''}" style="height:${Math.round(d.cal/maxCal*75)}px"></div>
+      <div class="bar-lbl">${d.day}</div>
     </div>
   `).join('');
 
-  const activeDays = cals.filter(c => c > 0);
-  const avg = activeDays.length ? Math.round(activeDays.reduce((a,b)=>a+b,0)/activeDays.length) : 0;
-  const daysInNorm = cals.filter(c => c > 0 && c <= goal).length;
+  const active = cals.filter(c=>c>0);
+  const avg = active.length ? Math.round(active.reduce((a,b)=>a+b,0)/active.length) : 0;
+  const daysOk = cals.filter(c=>c>0&&c<=goal).length;
   const total = cals.reduce((a,b)=>a+b,0);
 
   document.getElementById('stat-grid').innerHTML = [
-    {val: avg + ' ккал', lbl: 'Среднее/день'},
-    {val: daysInNorm + ' из 7', lbl: 'Дней в норме'},
-    {val: total + ' ккал', lbl: 'Всего за неделю'},
-    {val: (goal-avg >= 0 ? '-' : '+') + Math.abs(goal-avg) + ' ккал', lbl: 'Баланс/день'},
-  ].map(s => `<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-lbl">${s.lbl}</div></div>`).join('');
+    {v:avg+' ккал',l:'Среднее/день'},
+    {v:daysOk+' из 7',l:'Дней в норме'},
+    {v:total+' ккал',l:'Всего за неделю'},
+    {v:(goal-avg>=0?'-':'+')+Math.abs(goal-avg)+' ккал',l:'Баланс/день'},
+  ].map(s=>`<div class="stat-card"><div class="stat-val">${s.v}</div><div class="stat-lbl">${s.l}</div></div>`).join('');
 
   document.getElementById('avg-macros').innerHTML = [
-    {name:'Белки', val: Math.round(avg*0.3/4), goal: profile.protein_goal||150, color:'#00C853'},
-    {name:'Углеводы', val: Math.round(avg*0.5/4), goal: profile.carbs_goal||250, color:'#FF6D00'},
-    {name:'Жиры', val: Math.round(avg*0.2/9), goal: profile.fat_goal||70, color:'#2979FF'},
-  ].map(m => `
-    <div class="macro-stat-row">
-      <div class="macro-stat-label">${m.name}</div>
-      <div class="macro-stat-bar"><div class="macro-stat-fill" style="width:${Math.min(m.val/m.goal*100,100)}%;background:${m.color}"></div></div>
-      <div class="macro-stat-val">${m.val}г</div>
+    {n:'Белки',v:Math.round(avg*0.3/4),g:profile.protein_goal||150,c:'var(--green)'},
+    {n:'Углеводы',v:Math.round(avg*0.5/4),g:profile.carbs_goal||250,c:'var(--orange)'},
+    {n:'Жиры',v:Math.round(avg*0.2/9),g:profile.fat_goal||70,c:'var(--blue)'},
+  ].map(m=>`
+    <div class="macro-stat">
+      <div class="macro-stat-dot" style="background:${m.c}"></div>
+      <div class="macro-stat-name">${m.n}</div>
+      <div class="macro-stat-bar"><div class="macro-stat-fill" style="width:${Math.min(m.v/m.g*100,100)}%;background:${m.c}"></div></div>
+      <div class="macro-stat-val">${m.v}г</div>
     </div>
   `).join('');
 }
@@ -603,107 +540,87 @@ async function loadProfile() {
   const entries = await api('/api/diary');
   const cal = entries.reduce((s,e)=>s+e.cal,0);
   document.getElementById('qs-cal').textContent = Math.round(cal);
-  document.getElementById('qs-weight').textContent = profile.weight ? profile.weight + ' кг' : '—';
-  document.getElementById('s-goal').textContent = (profile.goal||2000) + ' ккал';
-  document.getElementById('s-body').textContent = profile.weight ? profile.weight + 'кг / ' + (profile.height||'?') + 'см' : '—';
-  if (window.Telegram && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-    const u = Telegram.WebApp.initDataUnsafe.user;
-    document.getElementById('profile-name-display').textContent = u.first_name || 'Пользователь';
-  }
+  document.getElementById('qs-weight').textContent = profile.weight||'—';
+  document.getElementById('s-goal').textContent = (profile.goal||2000)+' ккал';
+  document.getElementById('s-body').textContent = profile.weight ? profile.weight+'кг' : '—';
+  if (window.Telegram&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user)
+    document.getElementById('profile-name-display').textContent = Telegram.WebApp.initDataUnsafe.user.first_name||'Пользователь';
 }
 
-function openEdit(type) {
-  const overlay = document.getElementById('edit-overlay');
-  const title = document.getElementById('edit-title');
-  const content = document.getElementById('edit-content');
-  overlay.classList.add('open');
-
-  if (type === 'goals') {
+function openSheet(type) {
+  const sheet = document.getElementById('profile-sheet');
+  const title = document.getElementById('sheet-title');
+  const content = document.getElementById('sheet-content');
+  sheet.classList.add('open');
+  if (type==='goals') {
     title.textContent = '🎯 Цели питания';
     content.innerHTML = `
-      <div class="field-row"><div class="field-label">Норма калорий (ккал)</div><input class="field-input" id="p-goal" type="number" inputmode="numeric" value="${profile.goal||2000}"></div>
-      <div class="field-row"><div class="field-label">Белки (г)</div><input class="field-input" id="p-protein" type="number" inputmode="numeric" value="${profile.protein_goal||150}"></div>
-      <div class="field-row"><div class="field-label">Жиры (г)</div><input class="field-input" id="p-fat" type="number" inputmode="numeric" value="${profile.fat_goal||70}"></div>
-      <div class="field-row"><div class="field-label">Углеводы (г)</div><input class="field-input" id="p-carbs" type="number" inputmode="numeric" value="${profile.carbs_goal||250}"></div>
-      <button class="save-btn" onclick="saveGoals()">💾 Сохранить</button>
-      <div class="cancel-link" onclick="closeEdit()" style="margin-top:12px;cursor:pointer;text-align:center;color:var(--text2)">Отмена</div>
+      <div class="field-group"><div class="field-lbl">Норма калорий</div><input class="field-inp" id="f-goal" type="number" inputmode="numeric" value="${profile.goal||2000}"></div>
+      <div class="field-group"><div class="field-lbl">Белки (г)</div><input class="field-inp" id="f-protein" type="number" inputmode="numeric" value="${profile.protein_goal||150}"></div>
+      <div class="field-group"><div class="field-lbl">Жиры (г)</div><input class="field-inp" id="f-fat" type="number" inputmode="numeric" value="${profile.fat_goal||70}"></div>
+      <div class="field-group"><div class="field-lbl">Углеводы (г)</div><input class="field-inp" id="f-carbs" type="number" inputmode="numeric" value="${profile.carbs_goal||250}"></div>
+      <button class="green-btn" onclick="saveGoals()">💾 Сохранить</button>
+      <button class="ghost-btn" onclick="closeModal('profile-sheet')">Отмена</button>
     `;
-  } else if (type === 'body') {
+  } else if (type==='body') {
     title.textContent = '💪 Параметры тела';
     content.innerHTML = `
-      <div class="field-row"><div class="field-label">Имя</div><input class="field-input" id="p-name" type="text" value="${profile.name||''}"></div>
-      <div class="field-row"><div class="field-label">Вес (кг)</div><input class="field-input" id="p-weight" type="number" inputmode="decimal" value="${profile.weight||''}"></div>
-      <div class="field-row"><div class="field-label">Рост (см)</div><input class="field-input" id="p-height" type="number" inputmode="numeric" value="${profile.height||''}"></div>
-      <div class="field-row"><div class="field-label">Возраст</div><input class="field-input" id="p-age" type="number" inputmode="numeric" value="${profile.age||''}"></div>
-      <button class="save-btn" onclick="saveBody()">💾 Сохранить</button>
-      <div class="cancel-link" onclick="closeEdit()" style="margin-top:12px;cursor:pointer;text-align:center;color:var(--text2)">Отмена</div>
+      <div class="field-group"><div class="field-lbl">Вес (кг)</div><input class="field-inp" id="f-weight" type="number" inputmode="decimal" value="${profile.weight||''}"></div>
+      <div class="field-group"><div class="field-lbl">Рост (см)</div><input class="field-inp" id="f-height" type="number" inputmode="numeric" value="${profile.height||''}"></div>
+      <div class="field-group"><div class="field-lbl">Возраст</div><input class="field-inp" id="f-age" type="number" inputmode="numeric" value="${profile.age||''}"></div>
+      <button class="green-btn" onclick="saveBody()">💾 Сохранить</button>
+      <button class="ghost-btn" onclick="closeModal('profile-sheet')">Отмена</button>
     `;
-  } else if (type === 'calc') {
+  } else if (type==='calc') {
     title.textContent = '⚡ Рассчитать норму';
     content.innerHTML = `
-      <div class="field-row"><div class="field-label">Пол</div>
-        <select class="field-input" id="p-gender" style="color:var(--text)">
-          <option value="male" ${profile.gender==='male'?'selected':''}>Мужской</option>
-          <option value="female" ${profile.gender==='female'?'selected':''}>Женский</option>
-        </select>
-      </div>
-      <div class="field-row"><div class="field-label">Активность</div>
-        <select class="field-input" id="p-activity" style="color:var(--text)">
-          <option value="1.2">Минимальная</option>
-          <option value="1.375">Лёгкая</option>
-          <option value="1.55" selected>Умеренная</option>
-          <option value="1.725">Высокая</option>
-          <option value="1.9">Очень высокая</option>
-        </select>
-      </div>
-      <div class="field-row"><div class="field-label">Цель</div>
-        <select class="field-input" id="p-goal-type" style="color:var(--text)">
-          <option value="-500">Похудение</option>
-          <option value="0" selected>Поддержание</option>
-          <option value="300">Набор массы</option>
-        </select>
-      </div>
-      <button class="calc-btn" onclick="calcBMR()">⚡ Рассчитать</button>
-      <div class="cancel-link" onclick="closeEdit()" style="margin-top:12px;cursor:pointer;text-align:center;color:var(--text2)">Отмена</div>
+      <div class="field-group"><div class="field-lbl">Пол</div>
+        <select class="field-inp" id="f-gender" style="color:var(--text)">
+          <option value="male">Мужской</option><option value="female">Женский</option>
+        </select></div>
+      <div class="field-group"><div class="field-lbl">Активность</div>
+        <select class="field-inp" id="f-activity" style="color:var(--text)">
+          <option value="1.2">Минимальная</option><option value="1.375">Лёгкая</option>
+          <option value="1.55" selected>Умеренная</option><option value="1.725">Высокая</option><option value="1.9">Очень высокая</option>
+        </select></div>
+      <div class="field-group"><div class="field-lbl">Цель</div>
+        <select class="field-inp" id="f-goaltype" style="color:var(--text)">
+          <option value="-500">Похудение</option><option value="0" selected>Поддержание</option><option value="300">Набор массы</option>
+        </select></div>
+      <button class="green-btn" onclick="calcBMR()">⚡ Рассчитать</button>
+      <button class="ghost-btn" onclick="closeModal('profile-sheet')">Отмена</button>
     `;
   }
 }
 
-function closeEdit() { document.getElementById('edit-overlay').classList.remove('open'); }
-
 async function saveGoals() {
-  profile.goal = parseInt(document.getElementById('p-goal').value);
-  profile.protein_goal = parseInt(document.getElementById('p-protein').value);
-  profile.fat_goal = parseInt(document.getElementById('p-fat').value);
-  profile.carbs_goal = parseInt(document.getElementById('p-carbs').value);
-  await api('/api/profile', {method:'POST', body: JSON.stringify(profile)});
-  closeEdit();
-  loadProfile();
+  profile.goal=parseInt(document.getElementById('f-goal').value);
+  profile.protein_goal=parseInt(document.getElementById('f-protein').value);
+  profile.fat_goal=parseInt(document.getElementById('f-fat').value);
+  profile.carbs_goal=parseInt(document.getElementById('f-carbs').value);
+  await api('/api/profile',{method:'POST',body:JSON.stringify(profile)});
+  closeModal('profile-sheet'); loadProfile();
 }
 
 async function saveBody() {
-  profile.name = document.getElementById('p-name').value;
-  profile.weight = parseFloat(document.getElementById('p-weight').value);
-  profile.height = parseFloat(document.getElementById('p-height').value);
-  profile.age = parseInt(document.getElementById('p-age').value);
-  await api('/api/profile', {method:'POST', body: JSON.stringify(profile)});
-  closeEdit();
-  loadProfile();
+  profile.weight=parseFloat(document.getElementById('f-weight').value);
+  profile.height=parseFloat(document.getElementById('f-height').value);
+  profile.age=parseInt(document.getElementById('f-age').value);
+  await api('/api/profile',{method:'POST',body:JSON.stringify(profile)});
+  closeModal('profile-sheet'); loadProfile();
 }
 
 function calcBMR() {
-  const w = profile.weight; const h = profile.height; const a = profile.age;
-  if (!w || !h || !a) { alert('Сначала заполните параметры тела'); closeEdit(); openEdit('body'); return; }
-  const gender = document.getElementById('p-gender').value;
-  const activity = parseFloat(document.getElementById('p-activity').value);
-  const goalAdj = parseInt(document.getElementById('p-goal-type').value);
-  const bmr = gender === 'male' ? 10*w + 6.25*h - 5*a + 5 : 10*w + 6.25*h - 5*a - 161;
-  const tdee = Math.round(bmr * activity + goalAdj);
-  profile.goal = tdee;
-  api('/api/profile', {method:'POST', body: JSON.stringify(profile)});
-  alert(`Ваша норма: ${tdee} ккал/день`);
-  closeEdit();
-  loadProfile();
+  const w=profile.weight,h=profile.height,a=profile.age;
+  if (!w||!h||!a){alert('Сначала заполните параметры тела');closeModal('profile-sheet');openSheet('body');return;}
+  const g=document.getElementById('f-gender').value;
+  const act=parseFloat(document.getElementById('f-activity').value);
+  const adj=parseInt(document.getElementById('f-goaltype').value);
+  const bmr=g==='male'?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161;
+  profile.goal=Math.round(bmr*act+adj);
+  api('/api/profile',{method:'POST',body:JSON.stringify(profile)});
+  alert(`Норма: ${profile.goal} ккал/день`);
+  closeModal('profile-sheet'); loadProfile();
 }
 
 loadDiary();
