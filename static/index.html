@@ -39,15 +39,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .diary-topbar-left p { font-size: 12px; color: var(--text2); margin-top: 2px; }
 
 /* FIRE BUTTON */
-.fire-btn { position: relative; background: none; border: none; cursor: pointer; padding: 4px; }
-.fire-emoji { font-size: 30px; display: block; transition: filter .3s; }
-.fire-emoji.active { filter: drop-shadow(0 0 8px #ff6b00) drop-shadow(0 0 4px #ff6b00); animation: flicker 1.5s ease-in-out infinite; }
-.fire-emoji.inactive { filter: grayscale(1) opacity(.4); }
+.fire-btn { position: relative; background: none; border: none; cursor: pointer; padding: 4px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+.fire-svg { width: 36px; height: 36px; transition: filter .3s; }
+.fire-svg.active { filter: drop-shadow(0 0 6px #ff6b00) drop-shadow(0 0 3px #ff8c00); animation: flicker 1.8s ease-in-out infinite; }
+.fire-svg.inactive { filter: grayscale(1) opacity(.35); }
 @keyframes flicker {
   0%,100% { transform: scale(1) rotate(-2deg); }
-  25% { transform: scale(1.05) rotate(2deg); }
-  50% { transform: scale(0.97) rotate(-1deg); }
-  75% { transform: scale(1.03) rotate(1deg); }
+  20% { transform: scale(1.06) rotate(2deg); }
+  40% { transform: scale(0.96) rotate(-1deg); }
+  60% { transform: scale(1.04) rotate(1.5deg); }
+  80% { transform: scale(0.98) rotate(-0.5deg); }
 }
 .fire-badge { position: absolute; top: -2px; right: -4px; background: var(--green); color: #000; font-size: 10px; font-weight: 800; border-radius: 10px; padding: 1px 5px; display: none; }
 
@@ -77,7 +78,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .meal-row-header { display: flex; align-items: center; padding: 12px 14px; gap: 12px; }
 .meal-icon-wrap { position: relative; width: 52px; height: 52px; flex-shrink: 0; }
 .meal-icon-wrap svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
-.meal-icon-emoji { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 22px; }
+.meal-icon-emoji { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 46px; height: 46px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .meal-row-info { flex: 1; }
 .meal-row-title { font-size: 16px; font-weight: 700; }
 .meal-row-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
@@ -179,7 +180,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <p id="today-label"></p>
     </div>
     <button class="fire-btn" onclick="openStreak()">
-      <span class="fire-emoji inactive" id="fire-emoji">🔥</span>
+      <svg class="fire-svg inactive" id="fire-emoji" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="fg1" cx="50%" cy="80%" r="60%">
+            <stop offset="0%" stop-color="#FFF176"/>
+            <stop offset="40%" stop-color="#FFB300"/>
+            <stop offset="100%" stop-color="#E53935"/>
+          </radialGradient>
+          <radialGradient id="fg2" cx="50%" cy="70%" r="50%">
+            <stop offset="0%" stop-color="#FFEE58"/>
+            <stop offset="100%" stop-color="#FF6F00"/>
+          </radialGradient>
+        </defs>
+        <!-- outer flame -->
+        <path d="M50 5 C50 5 65 25 68 40 C72 30 70 18 65 10 C75 22 80 38 78 55 C82 48 83 38 80 28 C88 42 90 60 85 75 C88 70 91 62 90 52 C95 65 93 85 82 97 C74 107 62 112 50 112 C38 112 26 107 18 97 C7 85 5 65 10 52 C9 62 12 70 15 75 C10 60 12 42 20 28 C17 38 18 48 22 55 C20 38 25 22 35 10 C30 18 28 30 32 40 C35 25 50 5 50 5Z" fill="url(#fg1)"/>
+        <!-- inner flame -->
+        <path d="M50 35 C50 35 58 48 59 58 C62 52 61 44 58 38 C63 46 65 57 62 67 C64 63 65 57 64 51 C67 59 66 70 61 78 C57 84 54 87 50 87 C46 87 43 84 39 78 C34 70 33 59 36 51 C35 57 36 63 38 67 C35 57 37 46 42 38 C39 44 38 52 41 58 C42 48 50 35 50 35Z" fill="url(#fg2)"/>
+        <!-- inner glow core -->
+        <ellipse cx="50" cy="78" rx="10" ry="14" fill="#FFFDE7" opacity="0.7"/>
+      </svg>
       <span class="fire-badge" id="fire-badge"></span>
     </button>
   </div>
@@ -335,8 +354,98 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <script>
 const MEALS = ['Завтрак','Обед','Ужин','Перекус'];
-const MEAL_ICONS = {'Завтрак':'☀️','Обед':'🍱','Ужин':'🌙','Перекус':'🍎'};
-const MEAL_COLORS = {'Завтрак':'#FFB800','Обед':'#3DDC84','Ужин':'#4A9EFF','Перекус':'#FF6B6B'};
+const MEAL_COLORS = {'Завтрак':'#FFB800','Обед':'#3DDC84','Ужин':'#4A9EFF','Перекус':'#A0522D'};
+const MEAL_BG = {'Завтрак':'#2A2415','Обед':'#111318','Ужин':'#111318','Перекус':'#1A1008'};
+
+function getMealSVG(mt) {
+  if (mt === 'Завтрак') return `
+    <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
+      <circle cx="26" cy="26" r="26" fill="#2A2415"/>
+      <!-- mug body -->
+      <rect x="13" y="22" width="20" height="18" rx="3" fill="#F5E6D0" stroke="#8B5E3C" stroke-width="1.5"/>
+      <!-- mug handle -->
+      <path d="M33 26 Q40 26 40 31 Q40 36 33 36" fill="none" stroke="#8B5E3C" stroke-width="2"/>
+      <!-- coffee top -->
+      <rect x="13" y="22" width="20" height="5" rx="2" fill="#5C3317"/>
+      <!-- steam 1 -->
+      <path d="M19 18 Q17 15 19 12" fill="none" stroke="#FFB800" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+      <!-- steam 2 -->
+      <path d="M23 17 Q21 13 23 10" fill="none" stroke="#FFB800" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+      <!-- steam 3 -->
+      <path d="M27 18 Q25 15 27 12" fill="none" stroke="#FFB800" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+    </svg>`;
+
+  if (mt === 'Обед') return `
+    <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
+      <circle cx="26" cy="26" r="26" fill="#111318"/>
+      <!-- plate -->
+      <circle cx="26" cy="28" r="16" fill="#2A2D35" stroke="#3DDC84" stroke-width="1"/>
+      <!-- egg white 1 -->
+      <ellipse cx="22" cy="29" rx="7" ry="6" fill="#F5F0E8"/>
+      <!-- egg white 2 -->
+      <ellipse cx="31" cy="29" rx="6" ry="5.5" fill="#F5F0E8"/>
+      <!-- yolk 1 -->
+      <circle cx="22" cy="29" r="3.5" fill="#FFB300"/>
+      <circle cx="21" cy="28" r="1" fill="#FFD54F" opacity="0.6"/>
+      <!-- yolk 2 -->
+      <circle cx="31" cy="29" r="3" fill="#FFB300"/>
+      <circle cx="30" cy="28" r="0.8" fill="#FFD54F" opacity="0.6"/>
+      <!-- toast -->
+      <rect x="15" y="35" width="8" height="6" rx="1" fill="#D4A055" transform="rotate(-15 19 38)"/>
+      <rect x="17" y="33" width="8" height="6" rx="1" fill="#E8B866" transform="rotate(-10 21 36)"/>
+      <!-- tomato -->
+      <circle cx="33" cy="24" r="3" fill="#E53935"/>
+      <line x1="33" y1="21" x2="33" y2="19" stroke="#388E3C" stroke-width="1.2"/>
+    </svg>`;
+
+  if (mt === 'Ужин') return `
+    <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
+      <circle cx="26" cy="26" r="26" fill="#111318"/>
+      <!-- cutting board -->
+      <rect x="10" y="16" width="32" height="22" rx="3" fill="#8B5E3C" opacity="0.9"/>
+      <rect x="12" y="18" width="28" height="18" rx="2" fill="#A0714F"/>
+      <!-- steak shape -->
+      <path d="M18 24 C16 22 17 20 20 19 C24 18 30 19 33 21 C36 23 35 28 32 30 C28 32 22 33 19 31 C16 29 17 26 18 24Z" fill="#C62828"/>
+      <path d="M20 22 C19 21 20 20 22 20 C25 19.5 29 20 31 21.5 C33 23 32 26 30 27 C27 28.5 22 29 20 27.5 C18.5 26.5 19 23 20 22Z" fill="#B71C1C"/>
+      <!-- fat marbling -->
+      <path d="M22 22 C24 22.5 26 22 28 22.5" fill="none" stroke="#FFCCBC" stroke-width="1.2" opacity="0.6"/>
+      <path d="M21 25 C23 25.5 25 25 27 25.5 C29 26" fill="none" stroke="#FFCCBC" stroke-width="1" opacity="0.5"/>
+      <!-- herb -->
+      <path d="M25 19.5 L25 17" stroke="#388E3C" stroke-width="1.2"/>
+      <ellipse cx="24" cy="17" rx="2" ry="1" fill="#43A047" transform="rotate(-20 24 17)"/>
+      <ellipse cx="26" cy="16.5" rx="2" ry="1" fill="#43A047" transform="rotate(20 26 16.5)"/>
+      <!-- fork -->
+      <line x1="11" y1="14" x2="11" y2="38" stroke="#9E9E9E" stroke-width="1.5"/>
+      <line x1="9" y1="14" x2="9" y2="20" stroke="#9E9E9E" stroke-width="1"/>
+      <line x1="11" y1="14" x2="11" y2="20" stroke="#9E9E9E" stroke-width="1"/>
+      <line x1="13" y1="14" x2="13" y2="20" stroke="#9E9E9E" stroke-width="1"/>
+    </svg>`;
+
+  if (mt === 'Перекус') return `
+    <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
+      <circle cx="26" cy="26" r="26" fill="#1A1008"/>
+      <!-- wrapper bottom -->
+      <rect x="19" y="30" width="14" height="14" rx="2" fill="#795548"/>
+      <!-- bar body -->
+      <rect x="18" y="14" width="16" height="20" rx="2" fill="#5D4037"/>
+      <!-- chocolate texture -->
+      <rect x="20" y="16" width="5" height="4" rx="0.5" fill="#4E342E"/>
+      <rect x="26" y="16" width="5" height="4" rx="0.5" fill="#4E342E"/>
+      <rect x="20" y="21" width="5" height="4" rx="0.5" fill="#4E342E"/>
+      <rect x="26" y="21" width="5" height="4" rx="0.5" fill="#4E342E"/>
+      <rect x="20" y="26" width="5" height="4" rx="0.5" fill="#4E342E"/>
+      <rect x="26" y="26" width="5" height="4" rx="0.5" fill="#4E342E"/>
+      <!-- nuts -->
+      <ellipse cx="22" cy="18" rx="1.5" ry="1" fill="#BCAAA4" transform="rotate(-20 22 18)"/>
+      <ellipse cx="28" cy="23" rx="1.5" ry="1" fill="#BCAAA4" transform="rotate(15 28 23)"/>
+      <ellipse cx="24" cy="28" rx="1.2" ry="0.8" fill="#BCAAA4"/>
+      <!-- wrapper fold -->
+      <rect x="18" y="30" width="16" height="3" rx="0" fill="#9E9E9E" opacity="0.4"/>
+      <line x1="18" y1="33" x2="34" y2="33" stroke="#757575" stroke-width="0.5"/>
+    </svg>`;
+
+  return `<svg viewBox="0 0 52 52" width="52" height="52"><circle cx="26" cy="26" r="26" fill="#252830"/></svg>`;
+}
 let profile = {goal:2000,protein_goal:150,fat_goal:70,carbs_goal:250};
 let foods = [];
 let selFood = null;
@@ -461,7 +570,7 @@ async function loadDiary(){
       <div class="meal-row-header">
         <div class="meal-icon-wrap">
           ${drawMealRing('',mc,target,color)}
-          <div class="meal-icon-emoji">${MEAL_ICONS[mt]}</div>
+          <div class="meal-icon-emoji">${getMealSVG(mt)}</div>
         </div>
         <div class="meal-row-info">
           <div class="meal-row-title">${mt}</div>
@@ -498,7 +607,7 @@ function goAdd(mt){
 async function initAdd(){
   if(!foods.length)foods=await api('/api/foods');
   document.getElementById('meal-tabs').innerHTML=MEALS.map(mt=>
-    `<div class="meal-tab ${mt===activeMeal?'active':''}" onclick="selTab(this,'${mt}')">${MEAL_ICONS[mt]} ${mt}</div>`
+    `<div class="meal-tab ${mt===activeMeal?'active':''}" onclick="selTab(this,'${mt}')">${mt}</div>`
   ).join('');
   renderFoods(foods);
 }
@@ -707,7 +816,24 @@ async function openStreak(){
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div style="text-align:center;padding:8px 0 20px">
-        <div style="font-size:64px;line-height:1;margin-bottom:8px;${s.current_streak>0?'filter:drop-shadow(0 0 12px #ff6b00)':''}">${s.current_streak>0?'🔥':'🩶'}</div>
+        <div style="width:80px;height:80px;margin:0 auto 12px;position:relative">
+          <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" width="80" height="80" style="${s.current_streak>0?'filter:drop-shadow(0 0 10px #ff6b00) drop-shadow(0 0 5px #ff8c00)':'filter:grayscale(1) opacity(.4)'}">
+            <defs>
+              <radialGradient id="sfg1" cx="50%" cy="80%" r="60%">
+                <stop offset="0%" stop-color="#FFF176"/>
+                <stop offset="40%" stop-color="#FFB300"/>
+                <stop offset="100%" stop-color="#E53935"/>
+              </radialGradient>
+              <radialGradient id="sfg2" cx="50%" cy="70%" r="50%">
+                <stop offset="0%" stop-color="#FFEE58"/>
+                <stop offset="100%" stop-color="#FF6F00"/>
+              </radialGradient>
+            </defs>
+            <path d="M50 5 C50 5 65 25 68 40 C72 30 70 18 65 10 C75 22 80 38 78 55 C82 48 83 38 80 28 C88 42 90 60 85 75 C88 70 91 62 90 52 C95 65 93 85 82 97 C74 107 62 112 50 112 C38 112 26 107 18 97 C7 85 5 65 10 52 C9 62 12 70 15 75 C10 60 12 42 20 28 C17 38 18 48 22 55 C20 38 25 22 35 10 C30 18 28 30 32 40 C35 25 50 5 50 5Z" fill="url(#sfg1)"/>
+            <path d="M50 35 C50 35 58 48 59 58 C62 52 61 44 58 38 C63 46 65 57 62 67 C64 63 65 57 64 51 C67 59 66 70 61 78 C57 84 54 87 50 87 C46 87 43 84 39 78 C34 70 33 59 36 51 C35 57 36 63 38 67 C35 57 37 46 42 38 C39 44 38 52 41 58 C42 48 50 35 50 35Z" fill="url(#sfg2)"/>
+            <ellipse cx="50" cy="78" rx="10" ry="14" fill="#FFFDE7" opacity="0.7"/>
+          </svg>
+        </div>
         <div style="font-size:36px;font-weight:800;color:${s.current_streak>0?'var(--green)':'var(--text2)'}">${s.current_streak}</div>
         <div style="font-size:14px;color:var(--text2);margin-top:4px">дней в ударе</div>
       </div>
