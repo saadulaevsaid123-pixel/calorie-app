@@ -5,7 +5,6 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__, static_folder="static")
-
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def get_db():
@@ -33,6 +32,15 @@ def init_db():
         CREATE TABLE IF NOT EXISTS profiles (
             user_id TEXT PRIMARY KEY,
             data JSONB NOT NULL
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS streaks (
+            user_id TEXT PRIMARY KEY,
+            current_streak INTEGER DEFAULT 0,
+            longest_streak INTEGER DEFAULT 0,
+            freezes INTEGER DEFAULT 2,
+            last_logged_date TEXT DEFAULT ''
         )
     """)
     conn.commit()
@@ -72,6 +80,53 @@ def get_user_id():
 
 def today_str():
     return datetime.now().strftime("%Y-%m-%d")
+
+def update_streak(user_id, conn):
+    cur = conn.cursor()
+    today = today_str()
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    cur.execute("SELECT * FROM streaks WHERE user_id=%s", (user_id,))
+    row = cur.fetchone()
+
+    if not row:
+        cur.execute("""
+            INSERT INTO streaks (user_id, current_streak, longest_streak, freezes, last_logged_date)
+            VALUES (%s, 1, 1, 2, %s)
+        """, (user_id, today))
+    else:
+        last = row["last_logged_date"]
+        current = row["current_streak"]
+        longest = row["longest_streak"]
+        freezes = row["freezes"]
+
+        if last == today:
+            pass  # уже залогировано сегодня
+        elif last == yesterday:
+            current += 1
+            longest = max(longest, current)
+            cur.execute("""
+                UPDATE streaks SET current_streak=%s, longest_streak=%s, last_logged_date=%s
+                WHERE user_id=%s
+            """, (current, longest, today, user_id))
+        else:
+            # пропущен день — сбрасываем или используем заморозку
+            days_missed = (datetime.strptime(today, "%Y-%m-%d") - datetime.strptime(last, "%Y-%m-%d")).days - 1
+            if days_missed <= freezes and freezes > 0:
+                freezes -= days_missed
+                current += 1
+                longest = max(longest, current)
+                cur.execute("""
+                    UPDATE streaks SET current_streak=%s, longest_streak=%s, freezes=%s, last_logged_date=%s
+                    WHERE user_id=%s
+                """, (current, longest, freezes, today, user_id))
+            else:
+                cur.execute("""
+                    UPDATE streaks SET current_streak=1, last_logged_date=%s WHERE user_id=%s
+                """, (today, user_id))
+
+    conn.commit()
+    cur.close()
 
 @app.route("/")
 def index():
@@ -119,6 +174,7 @@ def add_entry():
         round(food["carbs"] * grams / 100, 1),
     ))
     conn.commit()
+    update_streak(user_id, conn)
     cur.close()
     conn.close()
     return jsonify({"ok": True})
@@ -180,6 +236,33 @@ def get_week():
     cur.close()
     conn.close()
     return jsonify(result)
+
+@app.route("/api/streak", methods=["GET"])
+def get_streak():
+    user_id = get_user_id()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM streaks WHERE user_id=%s", (user_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if row:
+        return jsonify(dict(row))
+    return jsonify({"current_streak":0,"longest_streak":0,"freezes":2,"last_logged_date":""})
+
+@app.route("/api/streak/freeze", methods=["POST"])
+def use_freeze():
+    user_id = get_user_id()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM streaks WHERE user_id=%s", (user_id,))
+    row = cur.fetchone()
+    if row and row["freezes"] > 0:
+        cur.execute("UPDATE streaks SET freezes=freezes-1 WHERE user_id=%s", (user_id,))
+        conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"ok": True})
 
 if __name__ == "__main__":
     init_db()
