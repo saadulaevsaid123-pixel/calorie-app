@@ -30,7 +30,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .nav-btn svg { width: 24px; height: 24px; stroke-width: 1.8; }
 
 /* PAGES */
-.page { display: none; padding-bottom: 80px; min-height: 100vh; }
+.page { display: none; padding-bottom: 80px; min-height: 100vh; opacity: 0; }
+.page.active { display: block; animation: page-in .25s ease forwards; }
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .page.active { display: block; }
 
 /* DIARY HEADER */
@@ -51,11 +56,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   80% { transform: scale(0.98) rotate(-0.5deg); }
 }
 @keyframes coil-spin {
-  0%,100% { transform: rotate(0deg) scale(.9); }
-  50% { transform: rotate(180deg) scale(1); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
-@keyframes coil-out { to { opacity: 0; pointer-events: none; } }
-@keyframes ring-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes coil-out {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8); }
+}
+@keyframes ring-in {
+  from { opacity: 0; transform: rotate(-90deg) scale(0.9); }
+  to { opacity: 1; transform: rotate(-90deg) scale(1); }
+}
 .fire-badge { position: absolute; top: -2px; right: -4px; background: var(--green); color: #000; font-size: 10px; font-weight: 800; border-radius: 10px; padding: 1px 5px; display: none; }
 
 /* WEEK STRIP */
@@ -84,20 +95,20 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .meal-row-header { display: flex; align-items: center; padding: 12px 14px; gap: 12px; }
 .meal-icon-wrap { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
 .meal-icon-wrap svg.ring-svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); opacity: 0; }
-.meal-icon-wrap svg.ring-svg.visible { opacity: 1; }
-.meal-icon-wrap svg.ring-svg circle.ring-progress { transition: stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1); }
+.meal-icon-wrap svg.ring-svg.visible { animation: ring-in .5s ease forwards; }
+.meal-icon-wrap svg.ring-svg circle.ring-progress { transition: stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1); }
 
 /* coil */
 .coil-wrap { position: absolute; top: 0; left: 0; width: 56px; height: 56px; pointer-events: none; }
 .coil-wrap span {
   position: absolute; inset: 0; border-radius: 50%;
   border: 5px solid rgba(255,255,255,.07);
-  animation: coil-spin 1.6s ease-in-out infinite;
+  border-top-color: var(--coil-c, #3DDC84);
+  animation: coil-spin 1.2s linear infinite;
 }
-.coil-wrap span { border-top-color: var(--coil-c, #3DDC84); }
-.coil-wrap span:nth-child(2) { inset: 8%; animation-delay: .15s; }
-.coil-wrap span:nth-child(3) { inset: 16%; animation-delay: .3s; }
-.coil-wrap span:nth-child(4) { inset: 24%; animation-delay: .45s; }
+.coil-wrap span:nth-child(2) { inset: 9%; animation-delay: -.3s; }
+.coil-wrap span:nth-child(3) { inset: 18%; animation-delay: -.6s; }
+.coil-wrap span:nth-child(4) { inset: 27%; animation-delay: -.9s; }
 .coil-wrap.done { animation: coil-out .4s ease forwards; }
 .meal-icon-emoji { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .meal-row-info { flex: 1; }
@@ -464,6 +475,7 @@ let foods = [];
 let selFood = null;
 let activeMeal = 'Обед';
 let mealTargets = {};
+let diaryLoaded = false; // флаг первой загрузки
 
 if (window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();}
 
@@ -606,6 +618,8 @@ async function loadDiary(){
   const c=document.getElementById('meals-container');
   c.innerHTML='';
   const mealCards = [];
+  const isFirst = !diaryLoaded;
+  diaryLoaded = true;
 
   MEALS.forEach(mt=>{
     const items=entries.filter(e=>e.meal_type===mt);
@@ -617,33 +631,36 @@ async function loadDiary(){
     mealCards.push({ mealId, mc, target, circ, color });
   });
 
-  // Запускаем coil → потом показываем кольцо с прогрессом
-  setTimeout(() => {
-    mealCards.forEach(({ mealId, mc, target, circ, color }) => {
+  if (isFirst) {
+    setTimeout(() => {
+      mealCards.forEach(({ mealId, mc, target, circ }) => {
+        const coil = document.getElementById('coil-'+mealId);
+        const ring = document.getElementById('ring-'+mealId);
+        if (!coil || !ring) return;
+        coil.classList.add('done');
+        ring.classList.add('visible');
+        const prog = target > 0 ? Math.min(mc / target, 1) : 0;
+        const circle = ring.querySelector('.ring-progress');
+        if (circle) setTimeout(() => { circle.style.strokeDashoffset = circ*(1-prog); }, 100);
+        setTimeout(() => { if (coil.parentNode) coil.remove(); }, 500);
+      });
+    }, 1500);
+  } else {
+    mealCards.forEach(({ mealId, mc, target, circ }) => {
       const coil = document.getElementById('coil-'+mealId);
       const ring = document.getElementById('ring-'+mealId);
-      if (!coil || !ring) return;
-
-      // Фейдаут coil
-      coil.classList.add('done');
-
-      // Показываем кольцо
-      ring.classList.add('visible');
-
-      // Анимируем заполнение
+      if (coil) coil.remove();
+      if (!ring) return;
+      ring.style.opacity = '1';
+      ring.style.transform = 'rotate(-90deg)';
       const prog = target > 0 ? Math.min(mc / target, 1) : 0;
-      const finalOffset = circ * (1 - prog);
       const circle = ring.querySelector('.ring-progress');
       if (circle) {
-        requestAnimationFrame(() => {
-          circle.style.strokeDashoffset = finalOffset;
-        });
+        circle.style.transition = 'stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)';
+        setTimeout(() => { circle.style.strokeDashoffset = circ*(1-prog); }, 50);
       }
-
-      // Убираем coil из DOM
-      setTimeout(() => { if (coil) coil.remove(); }, 500);
     });
-  }, 900);
+  }
 }
 
 async function delEntry(id){
