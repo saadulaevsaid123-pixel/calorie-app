@@ -50,6 +50,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   60% { transform: scale(1.04) rotate(1.5deg); }
   80% { transform: scale(0.98) rotate(-0.5deg); }
 }
+@keyframes coil-spin {
+  0%,100% { transform: rotate(0deg) scale(.9); }
+  50% { transform: rotate(180deg) scale(1); }
+}
+@keyframes coil-out { to { opacity: 0; pointer-events: none; } }
+@keyframes ring-in { from { opacity: 0; } to { opacity: 1; } }
 .fire-badge { position: absolute; top: -2px; right: -4px; background: var(--green); color: #000; font-size: 10px; font-weight: 800; border-radius: 10px; padding: 1px 5px; display: none; }
 
 /* WEEK STRIP */
@@ -77,7 +83,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .meal-row { background: var(--bg2); border-radius: 12px; margin-bottom: 8px; overflow: hidden; }
 .meal-row-header { display: flex; align-items: center; padding: 12px 14px; gap: 12px; }
 .meal-icon-wrap { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
-.meal-icon-wrap svg.ring-svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+.meal-icon-wrap svg.ring-svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); opacity: 0; }
+.meal-icon-wrap svg.ring-svg.visible { opacity: 1; }
+.meal-icon-wrap svg.ring-svg circle.ring-progress { transition: stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1); }
+
+/* coil */
+.coil-wrap { position: absolute; top: 0; left: 0; width: 56px; height: 56px; pointer-events: none; }
+.coil-wrap span {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 5px solid rgba(255,255,255,.07);
+  animation: coil-spin 1.6s ease-in-out infinite;
+}
+.coil-wrap span { border-top-color: var(--coil-c, #3DDC84); }
+.coil-wrap span:nth-child(2) { inset: 8%; animation-delay: .15s; }
+.coil-wrap span:nth-child(3) { inset: 16%; animation-delay: .3s; }
+.coil-wrap span:nth-child(4) { inset: 24%; animation-delay: .45s; }
+.coil-wrap.done { animation: coil-out .4s ease forwards; }
 .meal-icon-emoji { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .meal-row-info { flex: 1; }
 .meal-row-title { font-size: 16px; font-weight: 700; }
@@ -482,17 +503,50 @@ function buildWeek(){
   }
 }
 
-function drawMealRing(canvasId, eaten, target, color) {
+function drawMealRing(id, eaten, target, color) {
   const size = 56;
   const r = 24;
   const circ = 2 * Math.PI * r;
   const prog = target > 0 ? Math.min(eaten / target, 1) : 0;
-  return `<svg class="ring-svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  const offset = circ * (1 - prog);
+  return `<svg class="ring-svg" id="ring-${id}" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
     <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#2A2D35" stroke-width="6"/>
-    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="6"
-      stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ*(1-prog)}"
-      style="transition:.5s"/>
+    <circle class="ring-progress" cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="6"
+      stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ}"/>
   </svg>`;
+}
+
+function buildMealCard(mt, items, mc, target, color) {
+  const mealId = mt.replace(/[^а-яa-z]/gi,'');
+  const div = document.createElement('div');
+  div.className = 'meal-row';
+  div.innerHTML = `
+    <div class="meal-row-header">
+      <div class="meal-icon-wrap">
+        ${drawMealRing(mealId, mc, target, color)}
+        <div class="coil-wrap" id="coil-${mealId}" style="--coil-c:${color}">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="meal-icon-emoji">${getMealSVG(mt)}</div>
+      </div>
+      <div class="meal-row-info">
+        <div class="meal-row-title">${mt}</div>
+        <div class="meal-row-sub">${mc>0?mc+' / ':''}<span style="color:${color}">${target} ккал</span></div>
+      </div>
+      <button class="meal-row-plus" onclick="goAdd('${mt}')">+</button>
+    </div>
+    ${items.length?`<div class="meal-row-items">${items.map(e=>`
+      <div class="food-row">
+        <div style="flex:1">
+          <div class="food-row-name">${e.name}</div>
+          <div class="food-row-meta">${e.grams}г · Б:${e.protein}г У:${e.carbs}г Ж:${e.fat}г</div>
+        </div>
+        <div class="food-row-cal">${e.cal}</div>
+        <button class="food-row-del" onclick="delEntry(${e.id})">✕</button>
+      </div>
+    `).join('')}</div>`:''}
+  `;
+  return { div, mealId, mc, target, circ: 2 * Math.PI * 24, color };
 }
 
 async function loadDiary(){
@@ -551,38 +605,45 @@ async function loadDiary(){
 
   const c=document.getElementById('meals-container');
   c.innerHTML='';
+  const mealCards = [];
+
   MEALS.forEach(mt=>{
     const items=entries.filter(e=>e.meal_type===mt);
     const mc=items.reduce((s,e)=>s+e.cal,0);
     const target=mealTargets[mt]||0;
     const color=MEAL_COLORS[mt];
-    const div=document.createElement('div');
-    div.className='meal-row';
-    div.innerHTML=`
-      <div class="meal-row-header">
-        <div class="meal-icon-wrap">
-          ${drawMealRing('',mc,target,color)}
-          <div class="meal-icon-emoji">${getMealSVG(mt)}</div>
-        </div>
-        <div class="meal-row-info">
-          <div class="meal-row-title">${mt}</div>
-          <div class="meal-row-sub">${mc>0?mc+' / ':''}<span style="color:${color}">${target} ккал</span></div>
-        </div>
-        <button class="meal-row-plus" onclick="goAdd('${mt}')">+</button>
-      </div>
-      ${items.length?`<div class="meal-row-items">${items.map(e=>`
-        <div class="food-row">
-          <div style="flex:1">
-            <div class="food-row-name">${e.name}</div>
-            <div class="food-row-meta">${e.grams}г · Б:${e.protein}г У:${e.carbs}г Ж:${e.fat}г</div>
-          </div>
-          <div class="food-row-cal">${e.cal}</div>
-          <button class="food-row-del" onclick="delEntry(${e.id})">✕</button>
-        </div>
-      `).join('')}</div>`:''}
-    `;
+    const { div, mealId, circ } = buildMealCard(mt, items, mc, target, color);
     c.appendChild(div);
+    mealCards.push({ mealId, mc, target, circ, color });
   });
+
+  // Запускаем coil → потом показываем кольцо с прогрессом
+  setTimeout(() => {
+    mealCards.forEach(({ mealId, mc, target, circ, color }) => {
+      const coil = document.getElementById('coil-'+mealId);
+      const ring = document.getElementById('ring-'+mealId);
+      if (!coil || !ring) return;
+
+      // Фейдаут coil
+      coil.classList.add('done');
+
+      // Показываем кольцо
+      ring.classList.add('visible');
+
+      // Анимируем заполнение
+      const prog = target > 0 ? Math.min(mc / target, 1) : 0;
+      const finalOffset = circ * (1 - prog);
+      const circle = ring.querySelector('.ring-progress');
+      if (circle) {
+        requestAnimationFrame(() => {
+          circle.style.strokeDashoffset = finalOffset;
+        });
+      }
+
+      // Убираем coil из DOM
+      setTimeout(() => { if (coil) coil.remove(); }, 500);
+    });
+  }, 900);
 }
 
 async function delEntry(id){
