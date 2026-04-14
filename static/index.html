@@ -329,7 +329,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <div class="meal-tabs" id="meal-tabs"></div>
   </div>
   <div class="search-box">
-    <input class="search-inp" id="search-input" placeholder="🔍 Поиск продукта..." oninput="filterFoods()">
+    <div style="position:relative">
+  <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none;display:flex;align-items:center">
+    <svg width="33" height="33" viewBox="657 163 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M667.5 193.75C661.85 193.75 657.25 189.15 657.25 183.5C657.25 177.85 661.85 173.25 667.5 173.25C667.91 173.25 668.25 173.59 668.25 174C668.25 174.41 667.91 174.75 667.5 174.75C662.67 174.75 658.75 178.68 658.75 183.5C658.75 188.32 662.67 192.25 667.5 192.25C672.33 192.25 676.25 188.32 676.25 183.5C676.25 183.09 676.59 182.75 677 182.75C677.41 182.75 677.75 183.09 677.75 183.5C677.75 189.15 673.15 193.75 667.5 193.75Z" fill="currentColor"/>
+  <path d="M678 194.75C677.81 194.75 677.62 194.68 677.47 194.53L675.47 192.53C675.18 192.24 675.18 191.76 675.47 191.47C675.76 191.18 676.24 191.18 676.53 191.47L678.53 193.47C678.82 193.76 678.82 194.24 678.53 194.53C678.38 194.68 678.19 194.75 678 194.75Z" fill="currentColor"/>
+  <path d="M676 177.75H670C669.59 177.75 669.25 177.41 669.25 177C669.25 176.59 669.59 176.25 670 176.25H676C676.41 176.25 676.75 176.59 676.75 177C676.75 177.41 676.41 177.75 676 177.75Z" fill="currentColor"/>
+  <path d="M673 180.75H670C669.59 180.75 669.25 180.41 669.25 180C669.25 179.59 669.59 179.25 670 179.25H673C673.41 179.25 673.75 179.59 673.75 180C673.75 180.41 673.41 180.75 673 180.75Z" fill="currentColor"/>
+</svg>
+  </div>
+  <input class="search-inp" id="search-input" placeholder="Поиск продукта..." oninput="filterFoods()" style="padding-left:44px">
+</div>
   </div>
   <div class="food-list" id="food-list"></div>
 </div>
