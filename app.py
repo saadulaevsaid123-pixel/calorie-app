@@ -35,6 +35,15 @@ def init_db():
         )
     """)
     cur.execute("""
+        CREATE TABLE IF NOT EXISTS weight_log (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            weight REAL NOT NULL,
+            UNIQUE(user_id, date)
+        )
+    """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS water (
             id SERIAL PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -308,6 +317,31 @@ def get_calc_macros():
     profile = row["data"] if row else {}
     return jsonify(calc_macros_from_goal(profile))
 
+@app.route("/api/week_macros")
+def get_week_macros():
+    user_id = get_user_id()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT
+            COALESCE(SUM(protein),0) as total_protein,
+            COALESCE(SUM(fat),0) as total_fat,
+            COALESCE(SUM(carbs),0) as total_carbs,
+            COUNT(DISTINCT date) as days
+        FROM diary
+        WHERE user_id=%s AND date >= (CURRENT_DATE - INTERVAL '7 days')::text
+    """, (user_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    days = max(int(row["days"]), 1)
+    return jsonify({
+        "protein": round(float(row["total_protein"]) / days, 1),
+        "fat": round(float(row["total_fat"]) / days, 1),
+        "carbs": round(float(row["total_carbs"]) / days, 1),
+        "days": int(row["days"])
+    })
+
 @app.route("/api/week")
 def get_week():
     user_id = get_user_id()
@@ -403,6 +437,47 @@ def set_water_goal():
     cur = conn.cursor()
     cur.execute("INSERT INTO water_goals (user_id, goal) VALUES (%s,%s) ON CONFLICT (user_id) DO UPDATE SET goal=EXCLUDED.goal",
         (user_id, data.get("goal", 2500)))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/weight", methods=["GET"])
+def get_weight():
+    user_id = get_user_id()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM weight_log WHERE user_id=%s ORDER BY date DESC LIMIT 30", (user_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route("/api/weight", methods=["POST"])
+def add_weight():
+    user_id = get_user_id()
+    body = request.json
+    weight = float(body.get("weight", 0))
+    date = body.get("date", today_str())
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO weight_log (user_id, date, weight)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (user_id, date) DO UPDATE SET weight=EXCLUDED.weight
+    """, (user_id, date, weight))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/weight/<date>", methods=["DELETE"])
+def delete_weight(date):
+    user_id = get_user_id()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM weight_log WHERE user_id=%s AND date=%s", (user_id, date))
     conn.commit()
     cur.close()
     conn.close()

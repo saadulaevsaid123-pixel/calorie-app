@@ -374,6 +374,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       </div>
     </div>
     <div class="settings-group">
+      <div class="settings-item" onclick="openSubpage('subpage-weight')">
+        <div class="si-icon" style="background:rgba(74,158,255,.12)">📈</div>
+        <div class="si-label">Трекер веса</div>
+        <div class="si-right"><span id="s-current-weight">—</span><span class="si-arrow">›</span></div>
+      </div>
+    </div>
+    <div class="settings-group">
       <div class="settings-item" onclick="openSheet('calc')">
         <div class="si-icon" style="background:rgba(255,140,0,.12)">⚡</div>
         <div class="si-label">Рассчитать норму калорий</div>
@@ -429,6 +436,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   </div>
 </div>
 
+<!-- SUBPAGE: WEIGHT -->
+<div class="subpage" id="subpage-weight">
+  <div class="subpage-header">
+    <button class="back-btn" onclick="closeSubpage('subpage-weight')">‹</button>
+    <div class="subpage-title">⚖️ Трекер веса</div>
+    <button onclick="openAddWeightSheet()" style="margin-left:auto;background:var(--green);color:#000;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Добавить</button>
+  </div>
+  <div id="weight-subpage-content" style="padding:16px"></div>
+</div>
+
 <!-- NAV -->
 <nav class="nav">
   <button class="nav-btn active" onclick="showPage('diary',this)">
@@ -468,6 +485,27 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <div class="cal-prev" id="m-cal-prev">0 <small>ккал</small></div>
     <button class="btn-green" onclick="confirmAdd()">✓ Добавить</button>
     <button class="btn-ghost" onclick="closeOverlay('add-modal')">Отмена</button>
+  </div>
+</div>
+
+<!-- ADD WEIGHT SHEET -->
+<div class="overlay" id="weight-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">⚖️ Записать вес</div>
+    <div style="margin:16px 0">
+      <div class="f-lbl">Вес (кг)</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
+        <input class="g-inp" type="number" inputmode="decimal" step="0.1" id="weight-input" placeholder="75.5">
+        <div class="g-unit">кг</div>
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div class="f-lbl">Дата</div>
+      <input class="f-inp" type="date" id="weight-date" style="margin-top:6px">
+    </div>
+    <button class="btn-green" onclick="saveWeight()">💾 Сохранить</button>
+    <button class="btn-ghost" onclick="closeOverlay('weight-sheet')">Отмена</button>
   </div>
 </div>
 
@@ -859,31 +897,36 @@ async function confirmAdd(){
 }
 
 async function loadStats(){
-  profile=await api('/api/profile');
-  const week=await api('/api/week');
-  const cals=week.map(d=>d.cal);
-  const mx=Math.max(...cals,profile.goal,1);
-  const goal=profile.goal||2000;
+  profile = await api('/api/profile');
+  const [week, macros] = await Promise.all([api('/api/week'), api('/api/week_macros')]);
+  const cals = week.map(d=>d.cal);
+  const mx = Math.max(...cals, profile.goal, 1);
+  const goal = profile.goal||2000;
+
   document.getElementById('stats-chart').innerHTML=week.map((d,i)=>`
     <div class="s-bar-wrap">
       <div class="s-bar ${i===6?'today':''}" style="height:${Math.round(d.cal/mx*68)}px"></div>
       <div class="s-bar-lbl">${d.day}</div>
     </div>
   `).join('');
-  const act=cals.filter(c=>c>0);
-  const avg=act.length?Math.round(act.reduce((a,b)=>a+b,0)/act.length):0;
-  const ok=cals.filter(c=>c>0&&c<=goal).length;
-  const tot=cals.reduce((a,b)=>a+b,0);
+
+  const act = cals.filter(c=>c>0);
+  const avg = act.length ? Math.round(act.reduce((a,b)=>a+b,0)/act.length) : 0;
+  const ok = cals.filter(c=>c>0&&c<=goal).length;
+  const tot = cals.reduce((a,b)=>a+b,0);
+
   document.getElementById('stat-grid').innerHTML=[
-    {v:avg+' ккал',l:'Среднее/день'},
-    {v:ok+' из 7',l:'Дней в норме'},
-    {v:tot+' ккал',l:'Всего за неделю'},
-    {v:(goal-avg>=0?'-':'+')+Math.abs(goal-avg)+' ккал',l:'Баланс/день'},
+    {v:avg+' ккал', l:'Среднее/день'},
+    {v:ok+' из 7', l:'Дней в норме'},
+    {v:tot+' ккал', l:'Всего за неделю'},
+    {v:(goal-avg>=0?'-':'+')+Math.abs(goal-avg)+' ккал', l:'Баланс/день'},
   ].map(s=>`<div class="stat-tile"><div class="stat-tile-val">${s.v}</div><div class="stat-tile-lbl">${s.l}</div></div>`).join('');
+
+  // Реальные макро из базы данных
   document.getElementById('macro-bars').innerHTML=[
-    {n:'Белки',v:Math.round(avg*0.3/4),g:profile.protein_goal||150,c:'var(--green)'},
-    {n:'Углеводы',v:Math.round(avg*0.5/4),g:profile.carbs_goal||250,c:'var(--orange)'},
-    {n:'Жиры',v:Math.round(avg*0.2/9),g:profile.fat_goal||70,c:'var(--blue)'},
+    {n:'Белки', v:macros.protein, g:profile.protein_goal||150, c:'var(--green)'},
+    {n:'Углеводы', v:macros.carbs, g:profile.carbs_goal||250, c:'var(--orange)'},
+    {n:'Жиры', v:macros.fat, g:profile.fat_goal||70, c:'var(--blue)'},
   ].map(m=>`
     <div class="mbar-row">
       <div class="mbar-dot" style="background:${m.c}"></div>
@@ -1075,7 +1118,7 @@ async function renderStreakSubpage() {
 }
 
 async function renderStatsSubpage() {
-  const [week, prof] = await Promise.all([api('/api/week'), api('/api/profile')]);
+  const [week, prof, macros] = await Promise.all([api('/api/week'), api('/api/profile'), api('/api/week_macros')]);
   const goal = prof.goal || 2000;
   const cals = week.map(d => d.cal);
   const maxCal = Math.max(...cals, goal, 1);
@@ -1121,15 +1164,15 @@ async function renderStatsSubpage() {
     <div style="background:var(--bg2);border-radius:16px;padding:16px">
       <div style="font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Макро за неделю (среднее)</div>
       ${[
-        {n:'Белки', v:prof.protein_goal||150, color:'var(--green)'},
-        {n:'Углеводы', v:prof.carbs_goal||250, color:'var(--orange)'},
-        {n:'Жиры', v:prof.fat_goal||70, color:'var(--blue)'},
+        {n:'Белки', v:macros.protein, g:prof.protein_goal||150, color:'var(--green)'},
+        {n:'Углеводы', v:macros.carbs, g:prof.carbs_goal||250, color:'var(--orange)'},
+        {n:'Жиры', v:macros.fat, g:prof.fat_goal||70, color:'var(--blue)'},
       ].map(m => `
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <div style="width:10px;height:10px;border-radius:3px;background:${m.color};flex-shrink:0"></div>
           <div style="font-size:13px;color:var(--text2);width:80px">${m.n}</div>
           <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
-            <div style="height:100%;background:${m.color};border-radius:3px;width:60%"></div>
+            <div style="height:100%;background:${m.color};border-radius:3px;width:${Math.min(m.v/m.g*100,100)}%"></div>
           </div>
           <div style="font-size:13px;font-weight:700;width:40px;text-align:right">${m.v}г</div>
         </div>
@@ -1365,6 +1408,137 @@ async function confirmAdd() {
   const [entries, targets] = await Promise.all([api('/api/diary'), api('/api/meal_targets')]);
   cachedEntries = entries; cachedTargets = targets; mealTargets = targets;
   showPage('diary', document.querySelectorAll('.nav-btn')[0]);
+}
+
+
+// ── WEIGHT TRACKER ─────────────────────────────────────────────────────────
+async function renderWeightSubpage() {
+  const logs = await api('/api/weight');
+  const profile = cachedProfile || {};
+  const goalWeight = profile.goal_weight || null;
+  const el = document.getElementById('weight-subpage-content');
+
+  if (!logs.length) {
+    el.innerHTML = `
+      <div style="text-align:center;padding:40px 20px">
+        <div style="font-size:48px;margin-bottom:12px">⚖️</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:8px">Нет записей</div>
+        <div style="font-size:13px;color:var(--text2)">Нажми "+ Добавить" чтобы записать свой вес</div>
+      </div>`;
+    return;
+  }
+
+  // Текущий и начальный вес
+  const current = logs[0].weight;
+  const first = logs[logs.length-1].weight;
+  const diff = +(current - first).toFixed(1);
+
+  // Обновим в профиле
+  const swEl = document.getElementById('s-current-weight');
+  if(swEl) swEl.textContent = current + ' кг';
+
+  // График (последние 14 записей)
+  const chartData = [...logs].reverse().slice(-14);
+  const weights = chartData.map(l => l.weight);
+  const minW = Math.floor(Math.min(...weights) - 1);
+  const maxW = Math.ceil(Math.max(...weights) + 1);
+  const range = maxW - minW || 1;
+  const chartH = 120;
+
+  const points = chartData.map((l, i) => {
+    const x = chartData.length === 1 ? 50 : (i / (chartData.length-1)) * 100;
+    const y = chartH - ((l.weight - minW) / range) * chartH;
+    return {x, y, w: l.weight, date: l.date};
+  });
+
+  const pathD = points.map((p,i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const areaD = pathD + ` L${points[points.length-1].x},${chartH} L0,${chartH} Z`;
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:var(--bg2);border-radius:14px;padding:14px;text-align:center">
+        <div style="font-size:22px;font-weight:800">${current}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:3px">Сейчас кг</div>
+      </div>
+      <div style="background:var(--bg2);border-radius:14px;padding:14px;text-align:center">
+        <div style="font-size:22px;font-weight:800;color:${diff<0?'var(--green)':diff>0?'var(--red)':'var(--text2)'}">${diff>0?'+':''}${diff}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:3px">Изменение кг</div>
+      </div>
+      <div style="background:var(--bg2);border-radius:14px;padding:14px;text-align:center">
+        <div style="font-size:22px;font-weight:800">${first}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:3px">Начало кг</div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg2);border-radius:16px;padding:16px;margin-bottom:14px">
+      <div style="font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">График</div>
+      <svg width="100%" height="${chartH+20}" viewBox="0 ${-10} 100 ${chartH+20}" preserveAspectRatio="none" style="overflow:visible">
+        <defs>
+          <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#4A9EFF" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#4A9EFF" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${areaD}" fill="url(#wg)"/>
+        <path d="${pathD}" fill="none" stroke="#4A9EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        ${points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#4A9EFF" vector-effect="non-scaling-stroke"/>`).join('')}
+      </svg>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px">
+        <span>${chartData[0]?.date?.slice(5)}</span>
+        <span>${chartData[chartData.length-1]?.date?.slice(5)}</span>
+      </div>
+    </div>
+
+    <div style="background:var(--bg2);border-radius:16px;overflow:hidden">
+      <div style="padding:14px 16px;font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">История</div>
+      ${logs.slice(0,20).map(l => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:15px;font-weight:700">${l.weight} кг</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">${l.date}</div>
+          </div>
+          <button onclick="deleteWeight('${l.date}')" style="background:rgba(255,77,109,.1);border:none;color:var(--red);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px">✕</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function openAddWeightSheet() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('weight-date').value = today;
+  document.getElementById('weight-input').value = cachedProfile?.weight || '';
+  document.getElementById('weight-sheet').classList.add('open');
+}
+
+async function saveWeight() {
+  const w = parseFloat(document.getElementById('weight-input').value);
+  const date = document.getElementById('weight-date').value;
+  if (!w || w < 20 || w > 300) { alert('Введите корректный вес'); return; }
+  await api('/api/weight', {method:'POST', body: JSON.stringify({weight: w, date})});
+  closeOverlay('weight-sheet');
+  // Обновляем профиль с новым весом
+  if (cachedProfile) {
+    cachedProfile.weight = w;
+    await api('/api/profile', {method:'POST', body: JSON.stringify(cachedProfile)});
+  }
+  renderWeightSubpage();
+}
+
+async function deleteWeight(date) {
+  if (!confirm('Удалить запись?')) return;
+  await api('/api/weight/' + date, {method:'DELETE'});
+  renderWeightSubpage();
+}
+
+// Подключаем weight к openSubpage
+const _origOpenSubpage = openSubpage;
+function openSubpage(id) {
+  document.getElementById(id).classList.add('open');
+  if(id === 'subpage-streak') renderStreakSubpage();
+  if(id === 'subpage-stats') renderStatsSubpage();
+  if(id === 'subpage-summary') renderSummarySubpage();
+  if(id === 'subpage-weight') renderWeightSubpage();
 }
 
 
