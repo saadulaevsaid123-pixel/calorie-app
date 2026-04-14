@@ -35,6 +35,21 @@ def init_db():
         )
     """)
     cur.execute("""
+        CREATE TABLE IF NOT EXISTS water (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            amount INTEGER NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS water_goals (
+            user_id TEXT PRIMARY KEY,
+            goal INTEGER DEFAULT 2500
+        )
+    """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS streaks (
             user_id TEXT PRIMARY KEY,
             current_streak INTEGER DEFAULT 0,
@@ -193,18 +208,30 @@ def get_diary():
 def add_entry():
     user_id = get_user_id()
     body = request.json
-    food = next((f for f in FOODS_DB if f["id"] == body["food_id"]), None)
-    if not food:
-        return jsonify({"error": "Food not found"}), 404
-    grams = float(body["grams"])
     entry_id = int(datetime.now().timestamp() * 1000)
     date = today_str()
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("INSERT INTO diary (id,user_id,date,name,grams,meal_type,cal,protein,fat,carbs) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-        (entry_id, user_id, date, food["name"], grams, body.get("meal_type","Обед"),
-         round(food["cal"]*grams/100), round(food["protein"]*grams/100,1),
-         round(food["fat"]*grams/100,1), round(food["carbs"]*grams/100,1)))
+
+    if body.get("food_id") == -1:
+        # Продукт из штрихкода — данные уже посчитаны
+        cur.execute("INSERT INTO diary (id,user_id,date,name,grams,meal_type,cal,protein,fat,carbs) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (entry_id, user_id, date,
+             body.get("name","Продукт"), float(body.get("grams",100)),
+             body.get("meal_type","Обед"),
+             int(body.get("cal",0)), float(body.get("protein",0)),
+             float(body.get("fat",0)), float(body.get("carbs",0))))
+    else:
+        food = next((f for f in FOODS_DB if f["id"] == body["food_id"]), None)
+        if not food:
+            cur.close(); conn.close()
+            return jsonify({"error": "Food not found"}), 404
+        grams = float(body["grams"])
+        cur.execute("INSERT INTO diary (id,user_id,date,name,grams,meal_type,cal,protein,fat,carbs) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (entry_id, user_id, date, food["name"], grams, body.get("meal_type","Обед"),
+             round(food["cal"]*grams/100), round(food["protein"]*grams/100,1),
+             round(food["fat"]*grams/100,1), round(food["carbs"]*grams/100,1)))
+
     conn.commit()
     update_streak(user_id, conn)
     cur.close()
@@ -308,6 +335,79 @@ def get_streak():
     if row:
         return jsonify(dict(row))
     return jsonify({"current_streak":0,"longest_streak":0,"freezes":2,"last_logged_date":""})
+
+@app.route("/api/barcode/<barcode>")
+def lookup_barcode(barcode):
+    """Поиск продукта по штрихкоду через Open Food Facts"""
+    import urllib.request
+    try:
+        url = f"https://world.openfoodfacts.org/api/v0/product/{barcode}.json"
+        req = urllib.request.Request(url, headers={'User-Agent': 'KaloreiApp/1.0'})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            import json as j
+            data = j.loads(r.read())
+        if data.get('status') != 1:
+            return jsonify({"found": False})
+        p = data['product']
+        n = p.get('nutriments', {})
+        name = p.get('product_name_ru') or p.get('product_name') or 'Неизвестный продукт'
+        cal = round(float(n.get('energy-kcal_100g') or n.get('energy_100g', 0) or 0))
+        protein = round(float(n.get('proteins_100g', 0) or 0), 1)
+        fat = round(float(n.get('fat_100g', 0) or 0), 1)
+        carbs = round(float(n.get('carbohydrates_100g', 0) or 0), 1)
+        return jsonify({
+            "found": True,
+            "name": name,
+            "cal": cal,
+            "protein": protein,
+            "fat": fat,
+            "carbs": carbs,
+            "barcode": barcode
+        })
+    except Exception as e:
+        return jsonify({"found": False, "error": str(e)})
+
+@app.route("/api/water", methods=["GET"])
+def get_water():
+    user_id = get_user_id()
+    date = request.args.get("date", today_str())
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COALESCE(SUM(amount),0) as total FROM water WHERE user_id=%s AND date=%s", (user_id, date))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return jsonify({"total": int(row["total"]), "goal": 2500})
+
+@app.route("/api/water", methods=["POST"])
+def add_water():
+    user_id = get_user_id()
+    body = request.json
+    amount = int(body.get("amount", 250))
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO water (user_id, date, amount, created_at)
+        VALUES (%s, %s, %s, %s)
+    """, (user_id, today_str(), amount, datetime.now().isoformat()))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/water/goal", methods=["POST"])
+def set_water_goal():
+    user_id = get_user_id()
+    data = request.json
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO water_goals (user_id, goal) VALUES (%s,%s) ON CONFLICT (user_id) DO UPDATE SET goal=EXCLUDED.goal",
+        (user_id, data.get("goal", 2500)))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"ok": True})
+
 
 if __name__ == "__main__":
     init_db()
