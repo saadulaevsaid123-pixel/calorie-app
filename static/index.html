@@ -412,24 +412,20 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <!-- BARCODE SCANNER -->
 <div class="scanner-overlay" id="scanner-overlay">
-  <div class="scanner-header">
-    <button class="back-btn" onclick="closeScanner()" style="background:rgba(255,255,255,.1)">‹</button>
-    <div style="font-size:17px;font-weight:800;color:white">Сканер штрихкода</div>
+  <div class="subpage-header">
+    <button class="back-btn" onclick="closeScanner()">‹</button>
+    <div class="subpage-title">📷 Сканер штрихкода</div>
   </div>
-  <div style="flex:1;position:relative;background:#000">
-    <video id="scanner-video" class="scanner-video" autoplay playsinline muted></video>
-    <div class="scanner-frame">
-      <div class="scanner-line"></div>
-      <div style="position:absolute;top:-2px;left:-2px;width:20px;height:20px;border-top:3px solid var(--green);border-left:3px solid var(--green);border-radius:2px 0 0 0"></div>
-      <div style="position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-top:3px solid var(--green);border-right:3px solid var(--green);border-radius:0 2px 0 0"></div>
-      <div style="position:absolute;bottom:-2px;left:-2px;width:20px;height:20px;border-bottom:3px solid var(--green);border-left:3px solid var(--green);border-radius:0 0 0 2px"></div>
-      <div style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;border-bottom:3px solid var(--green);border-right:3px solid var(--green);border-radius:0 0 2px 0"></div>
+  <div id="qr-reader" style="width:100%;background:#000"></div>
+  <div style="padding:16px">
+    <div id="barcode-result"></div>
+    <div style="margin-top:12px">
+      <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:8px">Или введи вручную</div>
+      <div style="display:flex;gap:8px">
+        <input class="scanner-input" id="barcode-input" type="number" inputmode="numeric" placeholder="4600001234567" style="flex:1">
+        <button onclick="lookupBarcode(document.getElementById('barcode-input').value)" style="background:var(--green);color:#000;border:none;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Найти</button>
+      </div>
     </div>
-  </div>
-  <div class="scanner-hint">Наведи камеру на штрихкод продукта</div>
-  <div class="scanner-manual">
-    <input class="scanner-input" id="barcode-input" type="number" inputmode="numeric" placeholder="Или введи штрихкод вручную...">
-    <button class="btn-green" style="white-space:nowrap;padding:12px 16px;border-radius:12px" onclick="lookupBarcode(document.getElementById('barcode-input').value)">Найти</button>
   </div>
 </div>
 
@@ -1233,75 +1229,111 @@ async function addWater(amount) {
 }
 
 // ── BARCODE SCANNER ────────────────────────────────────────────────────────
-let scannerStream = null;
-let scannerInterval = null;
+let html5QrScanner = null;
+
+function loadHtml5Qr() {
+  return new Promise((resolve, reject) => {
+    if (window.Html5Qrcode) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
 
 async function openScanner() {
   document.getElementById('scanner-overlay').classList.add('open');
+  document.getElementById('barcode-result').innerHTML = '';
+
   try {
-    scannerStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: {ideal: 1280}, height: {ideal: 720} }
-    });
-    const video = document.getElementById('scanner-video');
-    video.srcObject = scannerStream;
+    await loadHtml5Qr();
 
-    // Используем BarcodeDetector если доступен
-    if ('BarcodeDetector' in window) {
-      const detector = new BarcodeDetector({formats: ['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
-      scannerInterval = setInterval(async () => {
-        try {
-          const barcodes = await detector.detect(video);
-          if (barcodes.length > 0) {
-            const code = barcodes[0].rawValue;
-            clearInterval(scannerInterval);
-            await lookupBarcode(code);
-          }
-        } catch(e) {}
-      }, 500);
-    }
+    html5QrScanner = new Html5Qrcode('qr-reader');
+
+    const config = {
+      fps: 10,
+      qrbox: { width: 280, height: 120 },
+      aspectRatio: 1.5,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+      ]
+    };
+
+    await html5QrScanner.start(
+      { facingMode: 'environment' },
+      config,
+      async (decodedText) => {
+        await html5QrScanner.stop();
+        await lookupBarcode(decodedText);
+      },
+      (errorMessage) => { /* ignore scan errors */ }
+    );
   } catch(e) {
-    alert('Нет доступа к камере. Введите штрихкод вручную.');
+    console.error('Scanner error:', e);
+    document.getElementById('barcode-result').innerHTML = `
+      <div style="background:rgba(255,77,109,.1);border-radius:12px;padding:14px;margin-bottom:12px;color:var(--red);font-size:13px">
+        ⚠️ Камера недоступна. Введите штрихкод вручную.
+      </div>`;
   }
 }
 
-function closeScanner() {
-  if (scannerStream) {
-    scannerStream.getTracks().forEach(t => t.stop());
-    scannerStream = null;
+async function closeScanner() {
+  if (html5QrScanner) {
+    try { await html5QrScanner.stop(); } catch(e) {}
+    html5QrScanner = null;
   }
-  if (scannerInterval) { clearInterval(scannerInterval); scannerInterval = null; }
   document.getElementById('scanner-overlay').classList.remove('open');
+  document.getElementById('qr-reader').innerHTML = '';
 }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('scanner-overlay').classList.contains('open')) {
+    lookupBarcode(document.getElementById('barcode-input').value);
+  }
+});
+
 
 async function lookupBarcode(code) {
-  if (!code) return;
-  closeScanner();
-
-  // Показываем загрузку
-  const foodList = document.getElementById('food-list');
-  foodList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">🔍 Ищем продукт...</div>';
+  if (!code || code.length < 4) { alert('Введите штрихкод'); return; }
+  const resultEl = document.getElementById('barcode-result');
+  resultEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2)">🔍 Ищем продукт...</div>';
 
   const result = await api('/api/barcode/' + code);
 
   if (!result.found) {
-    foodList.innerHTML = `<div style="padding:20px;text-align:center">
-      <div style="font-size:40px;margin-bottom:8px">😔</div>
-      <div style="color:var(--text2)">Продукт не найден</div>
-      <div style="font-size:12px;color:var(--text3);margin-top:4px">Штрихкод: ${code}</div>
+    resultEl.innerHTML = `<div style="background:var(--bg2);border-radius:16px;padding:20px;text-align:center">
+      <div style="font-size:36px;margin-bottom:8px">😔</div>
+      <div style="font-weight:700;margin-bottom:4px">Продукт не найден</div>
+      <div style="font-size:12px;color:var(--text3)">Попробуйте другой штрихкод</div>
     </div>`;
     return;
   }
 
-  // Показываем найденный продукт и сразу открываем модалку
+  resultEl.innerHTML = `<div style="background:var(--bg2);border-radius:16px;padding:16px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">${result.name}</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">${result.cal} ккал · Б:${result.protein}г У:${result.carbs}г Ж:${result.fat}г на 100г</div>
+    <button onclick="addBarcodeProduct()" class="btn-green">+ Добавить в ${activeMeal}</button>
+  </div>`;
+
+  window._barcodeProduct = result;
+}
+
+function addBarcodeProduct() {
+  if (!window._barcodeProduct) return;
+  const result = window._barcodeProduct;
   selFood = {id: 0, name: result.name, cal: result.cal, protein: result.protein, fat: result.fat, carbs: result.carbs};
   document.getElementById('m-food-name').textContent = result.name;
   document.getElementById('m-food-meta').textContent = `${result.cal} ккал · Б:${result.protein}г У:${result.carbs}г Ж:${result.fat}г на 100г`;
   document.getElementById('m-grams').value = 100;
   updatePreview();
+  closeScanner();
   document.getElementById('add-modal').classList.add('open');
-
-  // Переопределим confirmAdd для штрихкода
-  window._barcodeProduct = result;
 }
 
 // Переопределим confirmAdd чтобы поддерживал штрихкод-продукты
