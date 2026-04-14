@@ -475,7 +475,11 @@ let foods = [];
 let selFood = null;
 let activeMeal = 'Обед';
 let mealTargets = {};
-let diaryLoaded = false; // флаг первой загрузки
+let appInited = false;       // coil только один раз при старте
+let cachedEntries = null;    // кеш дневника
+let cachedProfile = null;    // кеш профиля
+let cachedTargets = null;    // кеш целей
+let ringValues = {};         // текущие значения колец {mealId: offset}
 
 if (window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();}
 
@@ -495,10 +499,11 @@ function showPage(name,btn){
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
-  if(name==='diary')loadDiary();
-  if(name==='stats')loadStats();
-  if(name==='profile')loadProfile();
-  if(name==='add')initAdd();
+  // Показываем кешированные данные сразу, потом обновляем в фоне
+  if(name==='diary') renderDiary(); // только рендер без запросов
+  if(name==='stats') loadStats();
+  if(name==='profile') renderProfile();
+  if(name==='add') initAdd();
 }
 
 function buildWeek(){
@@ -562,9 +567,40 @@ function buildMealCard(mt, items, mc, target, color) {
 }
 
 async function loadDiary(){
-  profile = await api('/api/profile');
-  const entries = await api('/api/diary');
-  mealTargets = await api('/api/meal_targets');
+  // Загружаем данные параллельно
+  const [prof, entries, targets, streak] = await Promise.all([
+    api('/api/profile'),
+    api('/api/diary'),
+    api('/api/meal_targets'),
+    api('/api/streak').catch(()=>({current_streak:0}))
+  ]);
+
+  // Обновляем кеш
+  cachedProfile = prof;
+  cachedEntries = entries;
+  cachedTargets = targets;
+  profile = prof;
+  mealTargets = targets;
+
+  // Обновляем streak
+  const fire = document.getElementById('fire-emoji');
+  const badge = document.getElementById('fire-badge');
+  if(streak.current_streak > 0){
+    fire.classList.remove('inactive'); fire.classList.add('active');
+    badge.textContent = streak.current_streak; badge.style.display = 'block';
+  } else {
+    fire.classList.remove('active'); fire.classList.add('inactive');
+    badge.style.display = 'none';
+  }
+
+  renderDiary();
+}
+
+function renderDiary(){
+  if(!cachedEntries || !cachedProfile) return;
+  const entries = cachedEntries;
+  profile = cachedProfile;
+  mealTargets = cachedTargets || {};
 
   const months=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
   const now=new Date();
@@ -572,7 +608,6 @@ async function loadDiary(){
   document.getElementById('today-label').textContent=`${dns[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`;
   buildWeek();
 
-  // Неделя от даты входа
   if(profile.joined_date){
     const joined = new Date(profile.joined_date);
     const diffDays = Math.floor((now - joined) / 86400000);
@@ -598,75 +633,68 @@ async function loadDiary(){
   document.getElementById('mb-fat').style.width=Math.min(t.f/(profile.fat_goal||70)*100,100)+'%';
   document.getElementById('mb-goal').style.width=Math.min(t.cal/goal*100,100)+'%';
 
-  // Streak badge
-  try {
-    const s = await api('/api/streak');
-    const fire = document.getElementById('fire-emoji');
-    const badge = document.getElementById('fire-badge');
-    if(s.current_streak > 0){
-      fire.classList.remove('inactive');
-      fire.classList.add('active');
-      badge.textContent = s.current_streak;
-      badge.style.display = 'block';
-    } else {
-      fire.classList.remove('active');
-      fire.classList.add('inactive');
-      badge.style.display = 'none';
-    }
-  } catch(e){}
-
   const c=document.getElementById('meals-container');
   c.innerHTML='';
-  const mealCards = [];
-  const isFirst = !diaryLoaded;
-  diaryLoaded = true;
 
   MEALS.forEach(mt=>{
     const items=entries.filter(e=>e.meal_type===mt);
     const mc=items.reduce((s,e)=>s+e.cal,0);
     const target=mealTargets[mt]||0;
     const color=MEAL_COLORS[mt];
-    const { div, mealId, circ } = buildMealCard(mt, items, mc, target, color);
+    const mealId=mt.replace(/[^а-яa-z]/gi,'');
+    const { div } = buildMealCard(mt, items, mc, target, color);
     c.appendChild(div);
-    mealCards.push({ mealId, mc, target, circ, color });
+
+    const circ = 2 * Math.PI * 24;
+    const ring = document.getElementById('ring-'+mealId);
+    const coil = document.getElementById('coil-'+mealId);
+
+    if (!appInited) {
+      // Первый запуск — coil 1.5с потом кольцо
+      setTimeout(() => {
+        if(coil) { coil.classList.add('done'); setTimeout(()=>{ if(coil.parentNode) coil.remove(); }, 500); }
+        if(ring) {
+          ring.classList.add('visible');
+          const prog = target>0 ? Math.min(mc/target,1) : 0;
+          const finalOffset = circ*(1-prog);
+          const circle = ring.querySelector('.ring-progress');
+          if(circle) setTimeout(()=>{ circle.style.strokeDashoffset = finalOffset; }, 100);
+          ringValues[mealId] = finalOffset;
+        }
+      }, 1500);
+    } else {
+      // Повторный рендер — убираем coil, обновляем кольцо плавно от текущей позиции
+      if(coil) coil.remove();
+      if(ring) {
+        ring.style.opacity = '1';
+        ring.style.transform = 'rotate(-90deg)';
+        const prog = target>0 ? Math.min(mc/target,1) : 0;
+        const finalOffset = circ*(1-prog);
+        const circle = ring.querySelector('.ring-progress');
+        if(circle) {
+          const prevOffset = ringValues[mealId] !== undefined ? ringValues[mealId] : circ;
+          circle.style.transition = 'none';
+          circle.style.strokeDashoffset = prevOffset;
+          requestAnimationFrame(()=>{
+            circle.style.transition = 'stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)';
+            circle.style.strokeDashoffset = finalOffset;
+          });
+          ringValues[mealId] = finalOffset;
+        }
+      }
+    }
   });
 
-  if (isFirst) {
-    setTimeout(() => {
-      mealCards.forEach(({ mealId, mc, target, circ }) => {
-        const coil = document.getElementById('coil-'+mealId);
-        const ring = document.getElementById('ring-'+mealId);
-        if (!coil || !ring) return;
-        coil.classList.add('done');
-        ring.classList.add('visible');
-        const prog = target > 0 ? Math.min(mc / target, 1) : 0;
-        const circle = ring.querySelector('.ring-progress');
-        if (circle) setTimeout(() => { circle.style.strokeDashoffset = circ*(1-prog); }, 100);
-        setTimeout(() => { if (coil.parentNode) coil.remove(); }, 500);
-      });
-    }, 1500);
-  } else {
-    mealCards.forEach(({ mealId, mc, target, circ }) => {
-      const coil = document.getElementById('coil-'+mealId);
-      const ring = document.getElementById('ring-'+mealId);
-      if (coil) coil.remove();
-      if (!ring) return;
-      ring.style.opacity = '1';
-      ring.style.transform = 'rotate(-90deg)';
-      const prog = target > 0 ? Math.min(mc / target, 1) : 0;
-      const circle = ring.querySelector('.ring-progress');
-      if (circle) {
-        circle.style.transition = 'stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)';
-        setTimeout(() => { circle.style.strokeDashoffset = circ*(1-prog); }, 50);
-      }
-    });
-  }
+  if(!appInited) setTimeout(()=>{ appInited = true; }, 2000);
 }
+
 
 async function delEntry(id){
   if(!confirm('Удалить?'))return;
   await api(`/api/diary/${id}`,{method:'DELETE'});
-  loadDiary();
+  // Обновляем кеш и рендерим без перезагрузки
+  cachedEntries = await api('/api/diary');
+  renderDiary();
 }
 
 function goAdd(mt){
@@ -728,6 +756,9 @@ async function confirmAdd(){
   if(!g||g<=0){alert('Введите граммы');return;}
   await api('/api/diary',{method:'POST',body:JSON.stringify({food_id:selFood.id,grams:g,meal_type:activeMeal})});
   closeOverlay('add-modal');
+  // Обновляем кеш в фоне и рендерим без coil
+  const [entries, targets] = await Promise.all([api('/api/diary'), api('/api/meal_targets')]);
+  cachedEntries = entries; cachedTargets = targets; mealTargets = targets;
   showPage('diary',document.querySelectorAll('.nav-btn')[0]);
 }
 
@@ -768,13 +799,21 @@ async function loadStats(){
 }
 
 async function loadProfile(){
-  profile=await api('/api/profile');
-  const entries=await api('/api/diary');
-  const cal=entries.reduce((s,e)=>s+e.cal,0);
+  // Используем кеш если есть, в фоне обновляем
+  if(cachedProfile) renderProfile();
+  const [prof, entries] = await Promise.all([api('/api/profile'), cachedEntries ? Promise.resolve(cachedEntries) : api('/api/diary')]);
+  cachedProfile = prof; cachedEntries = entries; profile = prof;
+  renderProfile();
+}
+
+function renderProfile(){
+  if(!cachedProfile) return;
+  const entries = cachedEntries || [];
+  const cal = entries.reduce((s,e)=>s+e.cal,0);
   document.getElementById('qs-cal').textContent=Math.round(cal);
-  document.getElementById('qs-weight').textContent=profile.weight||'—';
-  document.getElementById('s-goal').textContent=(profile.goal||2000)+' ккал';
-  document.getElementById('s-body').textContent=profile.weight?profile.weight+'кг':'—';
+  document.getElementById('qs-weight').textContent=cachedProfile.weight||'—';
+  document.getElementById('s-goal').textContent=(cachedProfile.goal||2000)+' ккал';
+  document.getElementById('s-body').textContent=cachedProfile.weight?cachedProfile.weight+'кг':'—';
   if(window.Telegram&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user)
     document.getElementById('p-name-display').textContent=Telegram.WebApp.initDataUnsafe.user.first_name||'Пользователь';
 }
