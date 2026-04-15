@@ -328,10 +328,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
     <div class="meal-tabs" id="meal-tabs"></div>
   </div>
+  <div style="display:flex;gap:8px;padding:0 16px 10px">
+    <button id="tab-all" onclick="switchFoodTab('all')" style="flex:1;padding:8px;border-radius:10px;border:none;background:rgba(61,220,132,.15);color:var(--green);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Все продукты</button>
+    <button id="tab-my" onclick="switchFoodTab('my')" style="flex:1;padding:8px;border-radius:10px;border:none;background:var(--bg3);color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Мои продукты</button>
+  </div>
+  <div id="category-tabs" style="display:flex;gap:6px;overflow-x:auto;padding:0 16px 10px;scrollbar-width:none"></div>
   <div class="search-box">
     <div style="position:relative">
   <div style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;display:flex;align-items:center">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M20 5.75H14C13.59 5.75 13.25 5.41 13.25 5C13.25 4.59 13.59 4.25 14 4.25H20C20.41 4.25 20.75 4.59 20.75 5C20.75 5.41 20.41 5.75 20 5.75Z" fill="currentColor"/>
       <path d="M17 8.75H14C13.59 8.75 13.25 8.41 13.25 8C13.25 7.59 13.59 7.25 14 7.25H17C17.41 7.25 17.75 7.59 17.75 8C17.75 8.41 17.41 8.75 17 8.75Z" fill="currentColor"/>
       <path d="M11.5 21.75C5.85 21.75 1.25 17.15 1.25 11.5C1.25 5.85 5.85 1.25 11.5 1.25C11.91 1.25 12.25 1.59 12.25 2C12.25 2.41 11.91 2.75 11.5 2.75C6.67 2.75 2.75 6.68 2.75 11.5C2.75 16.32 6.67 20.25 11.5 20.25C16.33 20.25 20.25 16.32 20.25 11.5C20.25 11.09 20.59 10.75 21 10.75C21.41 10.75 21.75 11.09 21.75 11.5C21.75 17.15 17.15 21.75 11.5 21.75Z" fill="currentColor"/>
@@ -857,12 +862,97 @@ function goAdd(mt){
   showPage('add',document.querySelectorAll('.nav-btn')[1]);
 }
 
+let allFoods = [];
+let activeCategory = '';
+let foodTab = 'all'; // 'all' | 'my'
+
 async function initAdd(){
-  if(!foods.length)foods=await api('/api/foods');
   document.getElementById('meal-tabs').innerHTML=MEALS.map(mt=>
     `<div class="meal-tab ${mt===activeMeal?'active':''}" onclick="selTab(this,'${mt}')">${mt}</div>`
   ).join('');
+
+  if(foodTab === 'my') {
+    await loadMyFoods();
+  } else {
+    await loadAllFoods();
+  }
+}
+
+async function switchFoodTab(tab) {
+  foodTab = tab;
+  document.getElementById('tab-all').style.background = tab==='all' ? 'rgba(61,220,132,.15)' : 'var(--bg3)';
+  document.getElementById('tab-all').style.color = tab==='all' ? 'var(--green)' : 'var(--text2)';
+  document.getElementById('tab-my').style.background = tab==='my' ? 'rgba(61,220,132,.15)' : 'var(--bg3)';
+  document.getElementById('tab-my').style.color = tab==='my' ? 'var(--green)' : 'var(--text2)';
+  document.getElementById('category-tabs').style.display = tab==='all' ? 'flex' : 'none';
+  document.getElementById('search-input').value = '';
+  if(tab === 'my') await loadMyFoods();
+  else await loadAllFoods();
+}
+
+async function loadAllFoods() {
+  if(!allFoods.length) {
+    const [f, cats] = await Promise.all([api('/api/foods'), api('/api/foods/categories')]);
+    allFoods = f;
+    const catEl = document.getElementById('category-tabs');
+    catEl.innerHTML = [{id:'',name:'Все'}, ...cats.map(c=>({id:c,name:c}))].map(c=>`
+      <div onclick="filterCategory('${c.id}')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;background:${c.id===activeCategory?'rgba(61,220,132,.15)':'var(--bg3)'};color:${c.id===activeCategory?'var(--green)':'var(--text2)'}">
+        ${c.name}
+      </div>`).join('');
+  }
+  foods = allFoods;
   renderFoods(foods);
+}
+
+async function loadMyFoods() {
+  document.getElementById('food-list').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">Загрузка...</div>';
+  const myFoods = await api('/api/my_foods');
+  if(!myFoods.length) {
+    document.getElementById('food-list').innerHTML = `
+      <div style="padding:40px 20px;text-align:center">
+        <div style="font-size:40px;margin-bottom:12px">📦</div>
+        <div style="font-weight:700;margin-bottom:6px">Нет сохранённых продуктов</div>
+        <div style="font-size:13px;color:var(--text2)">Отсканируй штрихкод — продукт сохранится здесь</div>
+      </div>`;
+    return;
+  }
+  renderFoodsCustom(myFoods);
+}
+
+function renderFoodsCustom(list) {
+  document.getElementById('food-list').innerHTML = list.map(f=>`
+    <div class="food-item-row" onclick="openAddModalCustom(${f.id}, '${f.name.replace(/'/g,"\'")}', ${f.cal}, ${f.protein}, ${f.fat}, ${f.carbs})">
+      <div style="flex:1">
+        <div class="food-item-name">${f.name}</div>
+        <div class="food-item-meta">${f.cal} ккал · Б:${f.protein}г У:${f.carbs}г Ж:${f.fat}г · на 100г</div>
+        ${f.barcode ? `<div style="font-size:10px;color:var(--text3);margin-top:2px">📷 ${f.barcode}</div>` : ''}
+      </div>
+      <div class="food-item-add">+</div>
+    </div>
+  `).join('');
+}
+
+function openAddModalCustom(id, name, cal, protein, fat, carbs) {
+  selFood = {id, name, cal, protein, fat, carbs, source: 'custom'};
+  document.getElementById('m-food-name').textContent = name;
+  document.getElementById('m-food-meta').textContent = `${cal} ккал · Б:${protein}г У:${carbs}г Ж:${fat}г на 100г`;
+  document.getElementById('m-grams').value = 100;
+  updatePreview();
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function filterCategory(cat) {
+  activeCategory = cat;
+  const q = document.getElementById('search-input').value.toLowerCase();
+  let result = allFoods;
+  if(cat) result = result.filter(f=>f.category===cat);
+  if(q) result = result.filter(f=>f.name.toLowerCase().includes(q));
+  renderFoods(result);
+  document.querySelectorAll('#category-tabs div').forEach((el,i)=>{
+    const isActive = (i===0&&cat==='') || el.textContent.trim()===cat;
+    el.style.background = isActive?'rgba(61,220,132,.15)':'var(--bg3)';
+    el.style.color = isActive?'var(--green)':'var(--text2)';
+  });
 }
 
 function selTab(el,mt){
@@ -873,7 +963,10 @@ function selTab(el,mt){
 
 function filterFoods(){
   const q=document.getElementById('search-input').value.toLowerCase();
-  renderFoods(foods.filter(f=>f.name.toLowerCase().includes(q)));
+  let result = allFoods.length ? allFoods : foods;
+  if(activeCategory) result = result.filter(f=>f.category===activeCategory);
+  if(q) result = result.filter(f=>f.name.toLowerCase().includes(q));
+  renderFoods(result);
 }
 
 function renderFoods(list){
@@ -1393,7 +1486,8 @@ async function lookupBarcode(code) {
 
   resultEl.innerHTML = `<div style="background:var(--bg2);border-radius:16px;padding:16px">
     <div style="font-size:15px;font-weight:700;margin-bottom:4px">${result.name}</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">${result.cal} ккал · Б:${result.protein}г У:${result.carbs}г Ж:${result.fat}г на 100г</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:6px">${result.cal} ккал · Б:${result.protein}г У:${result.carbs}г Ж:${result.fat}г на 100г</div>
+    <div style="font-size:11px;color:var(--green);margin-bottom:14px">${result.source==='db'?'✓ Из нашей базы':'✓ Найден и сохранён в базу'}</div>
     <button onclick="addBarcodeProduct()" class="btn-green">+ Добавить в ${activeMeal}</button>
   </div>`;
 
@@ -1418,14 +1512,15 @@ async function confirmAdd() {
   const g = parseFloat(document.getElementById('m-grams').value);
   if (!g || g <= 0) { alert('Введите граммы'); return; }
 
-  if (selFood && selFood.id === 0 && window._barcodeProduct) {
-    // Продукт из штрихкода — сохраняем напрямую
+  if (selFood && selFood.source === 'custom') {
+    await api('/api/diary', {method:'POST', body: JSON.stringify({
+      food_id: selFood.id, grams: g, meal_type: activeMeal, food_source: 'custom'
+    })});
+  } else if (selFood && selFood.id === 0 && window._barcodeProduct) {
     const food = window._barcodeProduct;
     await api('/api/diary', {method:'POST', body: JSON.stringify({
-      food_id: -1,
-      grams: g,
-      meal_type: activeMeal,
-      // Передаём данные напрямую
+      food_id: food.id || -1, grams: g, meal_type: activeMeal,
+      food_source: food.id ? 'custom' : 'manual',
       name: food.name,
       cal: Math.round(food.cal * g / 100),
       protein: +(food.protein * g / 100).toFixed(1),

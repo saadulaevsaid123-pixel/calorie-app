@@ -35,6 +35,29 @@ def init_db():
         )
     """)
     cur.execute("""
+        CREATE TABLE IF NOT EXISTS custom_foods (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            cal INTEGER NOT NULL,
+            protein REAL NOT NULL,
+            fat REAL NOT NULL,
+            carbs REAL NOT NULL,
+            category TEXT DEFAULT 'Сканер',
+            barcode TEXT,
+            added_by TEXT,
+            created_at TEXT
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_foods (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            food_id INTEGER NOT NULL,
+            food_source TEXT DEFAULT 'custom',
+            created_at TEXT
+        )
+    """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS weight_log (
             id SERIAL PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -72,31 +95,1446 @@ def init_db():
     conn.close()
 
 FOODS_DB = [
-    {"id":1,"name":"Куриная грудка","cal":165,"protein":31.0,"fat":3.6,"carbs":0.0},
-    {"id":2,"name":"Лосось","cal":208,"protein":20.0,"fat":13.0,"carbs":0.0},
-    {"id":3,"name":"Говядина","cal":250,"protein":26.0,"fat":17.0,"carbs":0.0},
-    {"id":4,"name":"Тунец конс.","cal":100,"protein":22.0,"fat":1.0,"carbs":0.0},
-    {"id":5,"name":"Яйцо куриное","cal":155,"protein":13.0,"fat":11.0,"carbs":1.0},
-    {"id":6,"name":"Творог 5%","cal":121,"protein":17.0,"fat":5.0,"carbs":2.7},
-    {"id":7,"name":"Греческий йогурт","cal":97,"protein":10.0,"fat":5.0,"carbs":3.6},
-    {"id":8,"name":"Молоко 2.5%","cal":52,"protein":2.8,"fat":2.5,"carbs":4.7},
-    {"id":9,"name":"Сыр твёрдый","cal":380,"protein":25.0,"fat":30.0,"carbs":0.5},
-    {"id":10,"name":"Овсянка","cal":350,"protein":12.0,"fat":6.0,"carbs":62.0},
-    {"id":11,"name":"Рис варёный","cal":130,"protein":2.7,"fat":0.3,"carbs":28.0},
-    {"id":12,"name":"Гречка варёная","cal":110,"protein":4.2,"fat":1.1,"carbs":21.0},
-    {"id":13,"name":"Макароны варёные","cal":158,"protein":5.5,"fat":0.9,"carbs":31.0},
-    {"id":14,"name":"Хлеб ржаной","cal":259,"protein":9.0,"fat":3.0,"carbs":48.0},
-    {"id":15,"name":"Картофель варёный","cal":80,"protein":2.0,"fat":0.1,"carbs":17.0},
-    {"id":16,"name":"Яблоко","cal":47,"protein":0.4,"fat":0.4,"carbs":10.0},
-    {"id":17,"name":"Банан","cal":89,"protein":1.1,"fat":0.3,"carbs":23.0},
-    {"id":18,"name":"Апельсин","cal":43,"protein":0.9,"fat":0.1,"carbs":9.4},
-    {"id":19,"name":"Огурец","cal":15,"protein":0.7,"fat":0.1,"carbs":2.5},
-    {"id":20,"name":"Помидор","cal":18,"protein":0.9,"fat":0.2,"carbs":3.5},
-    {"id":21,"name":"Брокколи","cal":34,"protein":2.8,"fat":0.4,"carbs":7.0},
-    {"id":22,"name":"Морковь","cal":41,"protein":0.9,"fat":0.2,"carbs":9.6},
-    {"id":23,"name":"Авокадо","cal":160,"protein":2.0,"fat":15.0,"carbs":9.0},
-    {"id":24,"name":"Оливковое масло","cal":884,"protein":0.0,"fat":100.0,"carbs":0.0},
-    {"id":25,"name":"Орехи грецкие","cal":654,"protein":15.0,"fat":65.0,"carbs":14.0},
+    {
+        "id": 1,
+        "name": "Куриная грудка",
+        "cal": 165,
+        "protein": 31.0,
+        "fat": 3.6,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 2,
+        "name": "Куриное бедро",
+        "cal": 209,
+        "protein": 26.0,
+        "fat": 11.0,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 3,
+        "name": "Куриное филе",
+        "cal": 110,
+        "protein": 23.0,
+        "fat": 1.2,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 4,
+        "name": "Говядина",
+        "cal": 250,
+        "protein": 26.0,
+        "fat": 17.0,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 5,
+        "name": "Говядина нежирная",
+        "cal": 187,
+        "protein": 28.7,
+        "fat": 7.4,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 6,
+        "name": "Свинина",
+        "cal": 310,
+        "protein": 25.0,
+        "fat": 23.0,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 7,
+        "name": "Свинина нежирная",
+        "cal": 215,
+        "protein": 27.0,
+        "fat": 12.0,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 8,
+        "name": "Индейка филе",
+        "cal": 115,
+        "protein": 24.0,
+        "fat": 1.5,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 9,
+        "name": "Индейка фарш",
+        "cal": 170,
+        "protein": 22.0,
+        "fat": 9.0,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 10,
+        "name": "Говяжий фарш",
+        "cal": 254,
+        "protein": 24.0,
+        "fat": 17.0,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 11,
+        "name": "Куриный фарш",
+        "cal": 143,
+        "protein": 17.0,
+        "fat": 8.0,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 12,
+        "name": "Баранина",
+        "cal": 294,
+        "protein": 25.0,
+        "fat": 21.0,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 13,
+        "name": "Кролик",
+        "cal": 183,
+        "protein": 21.0,
+        "fat": 11.0,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 14,
+        "name": "Утка",
+        "cal": 337,
+        "protein": 19.0,
+        "fat": 29.0,
+        "carbs": 0.0,
+        "category": "Мясо"
+    },
+    {
+        "id": 15,
+        "name": "Ветчина",
+        "cal": 145,
+        "protein": 17.0,
+        "fat": 8.0,
+        "carbs": 1.5,
+        "category": "Мясо"
+    },
+    {
+        "id": 16,
+        "name": "Колбаса варёная",
+        "cal": 260,
+        "protein": 13.0,
+        "fat": 23.0,
+        "carbs": 1.8,
+        "category": "Мясо"
+    },
+    {
+        "id": 17,
+        "name": "Сосиски",
+        "cal": 256,
+        "protein": 11.0,
+        "fat": 23.0,
+        "carbs": 1.6,
+        "category": "Мясо"
+    },
+    {
+        "id": 18,
+        "name": "Бекон",
+        "cal": 541,
+        "protein": 37.0,
+        "fat": 42.0,
+        "carbs": 1.4,
+        "category": "Мясо"
+    },
+    {
+        "id": 19,
+        "name": "Лосось",
+        "cal": 208,
+        "protein": 20.0,
+        "fat": 13.0,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 20,
+        "name": "Форель",
+        "cal": 148,
+        "protein": 21.0,
+        "fat": 7.0,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 21,
+        "name": "Тунец конс.",
+        "cal": 100,
+        "protein": 22.0,
+        "fat": 1.0,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 22,
+        "name": "Тунец свежий",
+        "cal": 144,
+        "protein": 23.0,
+        "fat": 5.0,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 23,
+        "name": "Треска",
+        "cal": 82,
+        "protein": 18.0,
+        "fat": 0.7,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 24,
+        "name": "Хек",
+        "cal": 86,
+        "protein": 17.0,
+        "fat": 2.0,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 25,
+        "name": "Минтай",
+        "cal": 72,
+        "protein": 16.0,
+        "fat": 1.0,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 26,
+        "name": "Скумбрия",
+        "cal": 262,
+        "protein": 18.0,
+        "fat": 21.0,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 27,
+        "name": "Сельдь",
+        "cal": 217,
+        "protein": 18.0,
+        "fat": 16.0,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 28,
+        "name": "Сардина конс.",
+        "cal": 208,
+        "protein": 25.0,
+        "fat": 11.0,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 29,
+        "name": "Креветки",
+        "cal": 99,
+        "protein": 24.0,
+        "fat": 0.3,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 30,
+        "name": "Кальмар",
+        "cal": 92,
+        "protein": 18.0,
+        "fat": 1.4,
+        "carbs": 1.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 31,
+        "name": "Мидии",
+        "cal": 86,
+        "protein": 12.0,
+        "fat": 2.2,
+        "carbs": 3.7,
+        "category": "Рыба"
+    },
+    {
+        "id": 32,
+        "name": "Краб",
+        "cal": 97,
+        "protein": 19.0,
+        "fat": 1.5,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 33,
+        "name": "Икра красная",
+        "cal": 263,
+        "protein": 32.0,
+        "fat": 14.0,
+        "carbs": 0.0,
+        "category": "Рыба"
+    },
+    {
+        "id": 34,
+        "name": "Яйцо куриное",
+        "cal": 155,
+        "protein": 13.0,
+        "fat": 11.0,
+        "carbs": 1.0,
+        "category": "Молочные"
+    },
+    {
+        "id": 35,
+        "name": "Яичный белок",
+        "cal": 52,
+        "protein": 11.0,
+        "fat": 0.2,
+        "carbs": 0.7,
+        "category": "Молочные"
+    },
+    {
+        "id": 36,
+        "name": "Творог 0%",
+        "cal": 79,
+        "protein": 18.0,
+        "fat": 0.2,
+        "carbs": 1.8,
+        "category": "Молочные"
+    },
+    {
+        "id": 37,
+        "name": "Творог 5%",
+        "cal": 121,
+        "protein": 17.0,
+        "fat": 5.0,
+        "carbs": 2.7,
+        "category": "Молочные"
+    },
+    {
+        "id": 38,
+        "name": "Творог 9%",
+        "cal": 159,
+        "protein": 16.0,
+        "fat": 9.0,
+        "carbs": 2.0,
+        "category": "Молочные"
+    },
+    {
+        "id": 39,
+        "name": "Греческий йогурт 0%",
+        "cal": 66,
+        "protein": 10.0,
+        "fat": 0.4,
+        "carbs": 4.0,
+        "category": "Молочные"
+    },
+    {
+        "id": 40,
+        "name": "Греческий йогурт",
+        "cal": 97,
+        "protein": 10.0,
+        "fat": 5.0,
+        "carbs": 3.6,
+        "category": "Молочные"
+    },
+    {
+        "id": 41,
+        "name": "Йогурт натуральный",
+        "cal": 61,
+        "protein": 5.0,
+        "fat": 3.2,
+        "carbs": 3.5,
+        "category": "Молочные"
+    },
+    {
+        "id": 42,
+        "name": "Кефир 1%",
+        "cal": 40,
+        "protein": 3.3,
+        "fat": 1.0,
+        "carbs": 4.1,
+        "category": "Молочные"
+    },
+    {
+        "id": 43,
+        "name": "Молоко 1.5%",
+        "cal": 46,
+        "protein": 3.0,
+        "fat": 1.5,
+        "carbs": 4.7,
+        "category": "Молочные"
+    },
+    {
+        "id": 44,
+        "name": "Молоко 2.5%",
+        "cal": 52,
+        "protein": 2.8,
+        "fat": 2.5,
+        "carbs": 4.7,
+        "category": "Молочные"
+    },
+    {
+        "id": 45,
+        "name": "Молоко 3.2%",
+        "cal": 60,
+        "protein": 2.8,
+        "fat": 3.2,
+        "carbs": 4.7,
+        "category": "Молочные"
+    },
+    {
+        "id": 46,
+        "name": "Сыр твёрдый",
+        "cal": 380,
+        "protein": 25.0,
+        "fat": 30.0,
+        "carbs": 0.5,
+        "category": "Молочные"
+    },
+    {
+        "id": 47,
+        "name": "Сыр Пармезан",
+        "cal": 431,
+        "protein": 38.0,
+        "fat": 29.0,
+        "carbs": 4.0,
+        "category": "Молочные"
+    },
+    {
+        "id": 48,
+        "name": "Сыр Моцарелла",
+        "cal": 280,
+        "protein": 28.0,
+        "fat": 17.0,
+        "carbs": 2.2,
+        "category": "Молочные"
+    },
+    {
+        "id": 49,
+        "name": "Сыр Фета",
+        "cal": 264,
+        "protein": 14.0,
+        "fat": 21.0,
+        "carbs": 4.0,
+        "category": "Молочные"
+    },
+    {
+        "id": 50,
+        "name": "Сметана 15%",
+        "cal": 158,
+        "protein": 2.6,
+        "fat": 15.0,
+        "carbs": 3.0,
+        "category": "Молочные"
+    },
+    {
+        "id": 51,
+        "name": "Сметана 20%",
+        "cal": 206,
+        "protein": 2.8,
+        "fat": 20.0,
+        "carbs": 3.2,
+        "category": "Молочные"
+    },
+    {
+        "id": 52,
+        "name": "Масло сливочное",
+        "cal": 748,
+        "protein": 0.5,
+        "fat": 82.5,
+        "carbs": 0.8,
+        "category": "Молочные"
+    },
+    {
+        "id": 53,
+        "name": "Овсянка сухая",
+        "cal": 350,
+        "protein": 12.0,
+        "fat": 6.0,
+        "carbs": 62.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 54,
+        "name": "Гречка варёная",
+        "cal": 110,
+        "protein": 4.2,
+        "fat": 1.1,
+        "carbs": 21.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 55,
+        "name": "Гречка сухая",
+        "cal": 313,
+        "protein": 12.6,
+        "fat": 3.3,
+        "carbs": 62.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 56,
+        "name": "Рис варёный",
+        "cal": 130,
+        "protein": 2.7,
+        "fat": 0.3,
+        "carbs": 28.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 57,
+        "name": "Рис бурый варёный",
+        "cal": 111,
+        "protein": 2.6,
+        "fat": 0.9,
+        "carbs": 23.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 58,
+        "name": "Макароны варёные",
+        "cal": 158,
+        "protein": 5.5,
+        "fat": 0.9,
+        "carbs": 31.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 59,
+        "name": "Макароны сухие",
+        "cal": 350,
+        "protein": 12.0,
+        "fat": 1.5,
+        "carbs": 71.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 60,
+        "name": "Перловка варёная",
+        "cal": 109,
+        "protein": 3.6,
+        "fat": 0.4,
+        "carbs": 22.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 61,
+        "name": "Киноа варёная",
+        "cal": 120,
+        "protein": 4.4,
+        "fat": 1.9,
+        "carbs": 21.3,
+        "category": "Крупы"
+    },
+    {
+        "id": 62,
+        "name": "Чечевица варёная",
+        "cal": 116,
+        "protein": 9.0,
+        "fat": 0.4,
+        "carbs": 20.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 63,
+        "name": "Нут варёный",
+        "cal": 164,
+        "protein": 8.9,
+        "fat": 2.6,
+        "carbs": 27.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 64,
+        "name": "Фасоль варёная",
+        "cal": 127,
+        "protein": 8.7,
+        "fat": 0.5,
+        "carbs": 22.0,
+        "category": "Крупы"
+    },
+    {
+        "id": 65,
+        "name": "Хлеб ржаной",
+        "cal": 259,
+        "protein": 9.0,
+        "fat": 3.0,
+        "carbs": 48.0,
+        "category": "Хлеб"
+    },
+    {
+        "id": 66,
+        "name": "Хлеб белый",
+        "cal": 265,
+        "protein": 8.0,
+        "fat": 3.0,
+        "carbs": 51.0,
+        "category": "Хлеб"
+    },
+    {
+        "id": 67,
+        "name": "Хлеб цельнозерновой",
+        "cal": 247,
+        "protein": 9.0,
+        "fat": 3.0,
+        "carbs": 46.0,
+        "category": "Хлеб"
+    },
+    {
+        "id": 68,
+        "name": "Лаваш",
+        "cal": 239,
+        "protein": 7.5,
+        "fat": 1.5,
+        "carbs": 50.0,
+        "category": "Хлеб"
+    },
+    {
+        "id": 69,
+        "name": "Хлебцы рисовые",
+        "cal": 392,
+        "protein": 7.0,
+        "fat": 3.0,
+        "carbs": 83.0,
+        "category": "Хлеб"
+    },
+    {
+        "id": 70,
+        "name": "Хлебцы ржаные",
+        "cal": 336,
+        "protein": 9.0,
+        "fat": 2.0,
+        "carbs": 72.0,
+        "category": "Хлеб"
+    },
+    {
+        "id": 71,
+        "name": "Картофель варёный",
+        "cal": 80,
+        "protein": 2.0,
+        "fat": 0.1,
+        "carbs": 17.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 72,
+        "name": "Батат варёный",
+        "cal": 86,
+        "protein": 1.6,
+        "fat": 0.1,
+        "carbs": 20.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 73,
+        "name": "Огурец",
+        "cal": 15,
+        "protein": 0.7,
+        "fat": 0.1,
+        "carbs": 2.5,
+        "category": "Овощи"
+    },
+    {
+        "id": 74,
+        "name": "Помидор",
+        "cal": 18,
+        "protein": 0.9,
+        "fat": 0.2,
+        "carbs": 3.5,
+        "category": "Овощи"
+    },
+    {
+        "id": 75,
+        "name": "Перец болгарский",
+        "cal": 31,
+        "protein": 1.0,
+        "fat": 0.3,
+        "carbs": 6.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 76,
+        "name": "Морковь",
+        "cal": 41,
+        "protein": 0.9,
+        "fat": 0.2,
+        "carbs": 9.6,
+        "category": "Овощи"
+    },
+    {
+        "id": 77,
+        "name": "Капуста белокочанная",
+        "cal": 27,
+        "protein": 1.8,
+        "fat": 0.1,
+        "carbs": 5.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 78,
+        "name": "Капуста цветная",
+        "cal": 25,
+        "protein": 1.9,
+        "fat": 0.3,
+        "carbs": 4.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 79,
+        "name": "Брокколи",
+        "cal": 34,
+        "protein": 2.8,
+        "fat": 0.4,
+        "carbs": 7.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 80,
+        "name": "Шпинат",
+        "cal": 23,
+        "protein": 2.9,
+        "fat": 0.4,
+        "carbs": 3.6,
+        "category": "Овощи"
+    },
+    {
+        "id": 81,
+        "name": "Салат листовой",
+        "cal": 15,
+        "protein": 1.3,
+        "fat": 0.2,
+        "carbs": 2.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 82,
+        "name": "Руккола",
+        "cal": 25,
+        "protein": 2.6,
+        "fat": 0.7,
+        "carbs": 3.7,
+        "category": "Овощи"
+    },
+    {
+        "id": 83,
+        "name": "Лук репчатый",
+        "cal": 41,
+        "protein": 1.1,
+        "fat": 0.1,
+        "carbs": 9.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 84,
+        "name": "Чеснок",
+        "cal": 149,
+        "protein": 6.4,
+        "fat": 0.5,
+        "carbs": 33.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 85,
+        "name": "Грибы шампиньоны",
+        "cal": 27,
+        "protein": 3.1,
+        "fat": 0.3,
+        "carbs": 3.3,
+        "category": "Овощи"
+    },
+    {
+        "id": 86,
+        "name": "Баклажан",
+        "cal": 25,
+        "protein": 1.2,
+        "fat": 0.2,
+        "carbs": 5.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 87,
+        "name": "Кабачок",
+        "cal": 24,
+        "protein": 1.5,
+        "fat": 0.3,
+        "carbs": 4.6,
+        "category": "Овощи"
+    },
+    {
+        "id": 88,
+        "name": "Тыква",
+        "cal": 26,
+        "protein": 1.0,
+        "fat": 0.1,
+        "carbs": 6.5,
+        "category": "Овощи"
+    },
+    {
+        "id": 89,
+        "name": "Свёкла варёная",
+        "cal": 44,
+        "protein": 1.7,
+        "fat": 0.0,
+        "carbs": 10.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 90,
+        "name": "Кукуруза варёная",
+        "cal": 123,
+        "protein": 4.0,
+        "fat": 2.0,
+        "carbs": 25.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 91,
+        "name": "Горошек зелёный",
+        "cal": 73,
+        "protein": 5.0,
+        "fat": 0.4,
+        "carbs": 13.0,
+        "category": "Овощи"
+    },
+    {
+        "id": 92,
+        "name": "Спаржа",
+        "cal": 20,
+        "protein": 2.2,
+        "fat": 0.1,
+        "carbs": 3.9,
+        "category": "Овощи"
+    },
+    {
+        "id": 93,
+        "name": "Яблоко",
+        "cal": 47,
+        "protein": 0.4,
+        "fat": 0.4,
+        "carbs": 10.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 94,
+        "name": "Банан",
+        "cal": 89,
+        "protein": 1.1,
+        "fat": 0.3,
+        "carbs": 23.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 95,
+        "name": "Апельсин",
+        "cal": 43,
+        "protein": 0.9,
+        "fat": 0.1,
+        "carbs": 9.4,
+        "category": "Фрукты"
+    },
+    {
+        "id": 96,
+        "name": "Мандарин",
+        "cal": 38,
+        "protein": 0.6,
+        "fat": 0.2,
+        "carbs": 8.6,
+        "category": "Фрукты"
+    },
+    {
+        "id": 97,
+        "name": "Грейпфрут",
+        "cal": 42,
+        "protein": 0.8,
+        "fat": 0.1,
+        "carbs": 10.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 98,
+        "name": "Груша",
+        "cal": 57,
+        "protein": 0.4,
+        "fat": 0.1,
+        "carbs": 15.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 99,
+        "name": "Виноград",
+        "cal": 67,
+        "protein": 0.6,
+        "fat": 0.2,
+        "carbs": 17.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 100,
+        "name": "Персик",
+        "cal": 39,
+        "protein": 0.9,
+        "fat": 0.3,
+        "carbs": 9.5,
+        "category": "Фрукты"
+    },
+    {
+        "id": 101,
+        "name": "Слива",
+        "cal": 46,
+        "protein": 0.7,
+        "fat": 0.3,
+        "carbs": 11.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 102,
+        "name": "Клубника",
+        "cal": 32,
+        "protein": 0.7,
+        "fat": 0.3,
+        "carbs": 7.7,
+        "category": "Фрукты"
+    },
+    {
+        "id": 103,
+        "name": "Малина",
+        "cal": 52,
+        "protein": 1.2,
+        "fat": 0.7,
+        "carbs": 11.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 104,
+        "name": "Черника",
+        "cal": 57,
+        "protein": 0.7,
+        "fat": 0.3,
+        "carbs": 14.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 105,
+        "name": "Арбуз",
+        "cal": 30,
+        "protein": 0.6,
+        "fat": 0.2,
+        "carbs": 7.6,
+        "category": "Фрукты"
+    },
+    {
+        "id": 106,
+        "name": "Дыня",
+        "cal": 33,
+        "protein": 0.6,
+        "fat": 0.2,
+        "carbs": 8.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 107,
+        "name": "Ананас",
+        "cal": 50,
+        "protein": 0.5,
+        "fat": 0.1,
+        "carbs": 13.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 108,
+        "name": "Манго",
+        "cal": 65,
+        "protein": 0.5,
+        "fat": 0.3,
+        "carbs": 17.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 109,
+        "name": "Авокадо",
+        "cal": 160,
+        "protein": 2.0,
+        "fat": 15.0,
+        "carbs": 9.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 110,
+        "name": "Киви",
+        "cal": 61,
+        "protein": 1.1,
+        "fat": 0.5,
+        "carbs": 15.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 111,
+        "name": "Хурма",
+        "cal": 70,
+        "protein": 0.5,
+        "fat": 0.3,
+        "carbs": 18.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 112,
+        "name": "Гранат",
+        "cal": 83,
+        "protein": 1.7,
+        "fat": 1.2,
+        "carbs": 19.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 113,
+        "name": "Финики",
+        "cal": 282,
+        "protein": 2.5,
+        "fat": 0.4,
+        "carbs": 75.0,
+        "category": "Фрукты"
+    },
+    {
+        "id": 114,
+        "name": "Орехи грецкие",
+        "cal": 654,
+        "protein": 15.0,
+        "fat": 65.0,
+        "carbs": 14.0,
+        "category": "Орехи"
+    },
+    {
+        "id": 115,
+        "name": "Миндаль",
+        "cal": 579,
+        "protein": 21.0,
+        "fat": 50.0,
+        "carbs": 22.0,
+        "category": "Орехи"
+    },
+    {
+        "id": 116,
+        "name": "Кешью",
+        "cal": 553,
+        "protein": 18.0,
+        "fat": 44.0,
+        "carbs": 30.0,
+        "category": "Орехи"
+    },
+    {
+        "id": 117,
+        "name": "Фундук",
+        "cal": 628,
+        "protein": 15.0,
+        "fat": 61.0,
+        "carbs": 17.0,
+        "category": "Орехи"
+    },
+    {
+        "id": 118,
+        "name": "Арахис",
+        "cal": 567,
+        "protein": 26.0,
+        "fat": 49.0,
+        "carbs": 16.0,
+        "category": "Орехи"
+    },
+    {
+        "id": 119,
+        "name": "Фисташки",
+        "cal": 562,
+        "protein": 20.0,
+        "fat": 45.0,
+        "carbs": 28.0,
+        "category": "Орехи"
+    },
+    {
+        "id": 120,
+        "name": "Семена подсолнечника",
+        "cal": 584,
+        "protein": 21.0,
+        "fat": 51.0,
+        "carbs": 20.0,
+        "category": "Орехи"
+    },
+    {
+        "id": 121,
+        "name": "Семена тыквы",
+        "cal": 559,
+        "protein": 30.0,
+        "fat": 49.0,
+        "carbs": 11.0,
+        "category": "Орехи"
+    },
+    {
+        "id": 122,
+        "name": "Семена чиа",
+        "cal": 486,
+        "protein": 17.0,
+        "fat": 31.0,
+        "carbs": 42.0,
+        "category": "Орехи"
+    },
+    {
+        "id": 123,
+        "name": "Арахисовая паста",
+        "cal": 588,
+        "protein": 25.0,
+        "fat": 50.0,
+        "carbs": 20.0,
+        "category": "Орехи"
+    },
+    {
+        "id": 124,
+        "name": "Оливковое масло",
+        "cal": 884,
+        "protein": 0.0,
+        "fat": 100.0,
+        "carbs": 0.0,
+        "category": "Масла"
+    },
+    {
+        "id": 125,
+        "name": "Подсолнечное масло",
+        "cal": 884,
+        "protein": 0.0,
+        "fat": 100.0,
+        "carbs": 0.0,
+        "category": "Масла"
+    },
+    {
+        "id": 126,
+        "name": "Кокосовое масло",
+        "cal": 892,
+        "protein": 0.0,
+        "fat": 100.0,
+        "carbs": 0.0,
+        "category": "Масла"
+    },
+    {
+        "id": 127,
+        "name": "Мёд",
+        "cal": 304,
+        "protein": 0.3,
+        "fat": 0.0,
+        "carbs": 82.0,
+        "category": "Сладкое"
+    },
+    {
+        "id": 128,
+        "name": "Сахар",
+        "cal": 387,
+        "protein": 0.0,
+        "fat": 0.0,
+        "carbs": 100.0,
+        "category": "Сладкое"
+    },
+    {
+        "id": 129,
+        "name": "Шоколад тёмный 70%",
+        "cal": 598,
+        "protein": 8.0,
+        "fat": 43.0,
+        "carbs": 46.0,
+        "category": "Сладкое"
+    },
+    {
+        "id": 130,
+        "name": "Шоколад молочный",
+        "cal": 535,
+        "protein": 8.0,
+        "fat": 30.0,
+        "carbs": 60.0,
+        "category": "Сладкое"
+    },
+    {
+        "id": 131,
+        "name": "Мороженое",
+        "cal": 207,
+        "protein": 3.5,
+        "fat": 11.0,
+        "carbs": 24.0,
+        "category": "Сладкое"
+    },
+    {
+        "id": 132,
+        "name": "Протеин сывороточный",
+        "cal": 370,
+        "protein": 75.0,
+        "fat": 4.0,
+        "carbs": 8.0,
+        "category": "Спортпит"
+    },
+    {
+        "id": 133,
+        "name": "Протеин казеиновый",
+        "cal": 360,
+        "protein": 78.0,
+        "fat": 2.0,
+        "carbs": 7.0,
+        "category": "Спортпит"
+    },
+    {
+        "id": 134,
+        "name": "Гейнер",
+        "cal": 380,
+        "protein": 30.0,
+        "fat": 2.0,
+        "carbs": 60.0,
+        "category": "Спортпит"
+    },
+    {
+        "id": 135,
+        "name": "Молоко овсяное",
+        "cal": 45,
+        "protein": 1.0,
+        "fat": 1.5,
+        "carbs": 6.5,
+        "category": "Напитки"
+    },
+    {
+        "id": 136,
+        "name": "Молоко миндальное",
+        "cal": 17,
+        "protein": 0.6,
+        "fat": 1.1,
+        "carbs": 1.4,
+        "category": "Напитки"
+    },
+    {
+        "id": 137,
+        "name": "Молоко соевое",
+        "cal": 54,
+        "protein": 3.3,
+        "fat": 1.8,
+        "carbs": 6.3,
+        "category": "Напитки"
+    },
+    {
+        "id": 138,
+        "name": "Сок апельсиновый",
+        "cal": 45,
+        "protein": 0.7,
+        "fat": 0.2,
+        "carbs": 10.4,
+        "category": "Напитки"
+    },
+    {
+        "id": 139,
+        "name": "Сок яблочный",
+        "cal": 46,
+        "protein": 0.1,
+        "fat": 0.1,
+        "carbs": 11.3,
+        "category": "Напитки"
+    },
+    {
+        "id": 140,
+        "name": "Борщ",
+        "cal": 50,
+        "protein": 2.5,
+        "fat": 2.0,
+        "carbs": 5.5,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 141,
+        "name": "Котлета",
+        "cal": 220,
+        "protein": 15.0,
+        "fat": 14.0,
+        "carbs": 8.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 142,
+        "name": "Пельмени",
+        "cal": 275,
+        "protein": 11.0,
+        "fat": 11.0,
+        "carbs": 32.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 143,
+        "name": "Вареники",
+        "cal": 213,
+        "protein": 8.0,
+        "fat": 5.0,
+        "carbs": 35.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 144,
+        "name": "Блины",
+        "cal": 233,
+        "protein": 6.0,
+        "fat": 9.0,
+        "carbs": 33.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 145,
+        "name": "Омлет",
+        "cal": 184,
+        "protein": 12.0,
+        "fat": 14.0,
+        "carbs": 2.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 146,
+        "name": "Суши ролл",
+        "cal": 150,
+        "protein": 6.0,
+        "fat": 3.5,
+        "carbs": 24.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 147,
+        "name": "Шаурма",
+        "cal": 245,
+        "protein": 14.0,
+        "fat": 12.0,
+        "carbs": 22.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 148,
+        "name": "Картошка фри",
+        "cal": 312,
+        "protein": 3.5,
+        "fat": 15.0,
+        "carbs": 41.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 149,
+        "name": "Каша овсяная на воде",
+        "cal": 88,
+        "protein": 3.0,
+        "fat": 1.7,
+        "carbs": 15.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 150,
+        "name": "Каша овсяная на молоке",
+        "cal": 135,
+        "protein": 5.0,
+        "fat": 4.5,
+        "carbs": 20.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 151,
+        "name": "Творожная запеканка",
+        "cal": 160,
+        "protein": 14.0,
+        "fat": 6.0,
+        "carbs": 12.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 152,
+        "name": "Салат Оливье",
+        "cal": 198,
+        "protein": 8.0,
+        "fat": 15.0,
+        "carbs": 10.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 153,
+        "name": "Цезарь с курицей",
+        "cal": 179,
+        "protein": 14.0,
+        "fat": 11.0,
+        "carbs": 7.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 154,
+        "name": "Гречка с курицей",
+        "cal": 135,
+        "protein": 13.0,
+        "fat": 2.5,
+        "carbs": 17.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 155,
+        "name": "Паста болоньезе",
+        "cal": 185,
+        "protein": 11.0,
+        "fat": 7.0,
+        "carbs": 21.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 156,
+        "name": "Плов",
+        "cal": 220,
+        "protein": 9.0,
+        "fat": 9.0,
+        "carbs": 28.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 157,
+        "name": "Стейк говяжий",
+        "cal": 271,
+        "protein": 26.0,
+        "fat": 18.0,
+        "carbs": 0.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 158,
+        "name": "Куриный гриль",
+        "cal": 165,
+        "protein": 29.0,
+        "fat": 5.0,
+        "carbs": 0.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 159,
+        "name": "Тефтели",
+        "cal": 194,
+        "protein": 14.0,
+        "fat": 12.0,
+        "carbs": 9.0,
+        "category": "Готовые блюда"
+    },
+    {
+        "id": 160,
+        "name": "Творог с ягодами",
+        "cal": 140,
+        "protein": 16.0,
+        "fat": 5.0,
+        "carbs": 8.0,
+        "category": "Готовые блюда"
+    }
 ]
 
 def get_user_id():
@@ -198,8 +1636,18 @@ def index():
 @app.route("/api/foods")
 def get_foods():
     q = request.args.get("q", "").lower()
-    result = [f for f in FOODS_DB if q in f["name"].lower()] if q else FOODS_DB
+    cat = request.args.get("category", "")
+    result = FOODS_DB
+    if q:
+        result = [f for f in result if q in f["name"].lower()]
+    if cat:
+        result = [f for f in result if f.get("category") == cat]
     return jsonify(result)
+
+@app.route("/api/foods/categories")
+def get_categories():
+    cats = list(dict.fromkeys(f["category"] for f in FOODS_DB))
+    return jsonify(cats)
 
 @app.route("/api/diary", methods=["GET"])
 def get_diary():
@@ -230,6 +1678,21 @@ def add_entry():
              body.get("meal_type","Обед"),
              int(body.get("cal",0)), float(body.get("protein",0)),
              float(body.get("fat",0)), float(body.get("carbs",0))))
+    elif body.get("food_source") == "custom":
+        # Продукт из custom_foods
+        conn2 = get_db()
+        cur2 = conn2.cursor()
+        cur2.execute("SELECT * FROM custom_foods WHERE id=%s", (body["food_id"],))
+        food = cur2.fetchone()
+        cur2.close(); conn2.close()
+        if not food:
+            cur.close(); conn.close()
+            return jsonify({"error": "Food not found"}), 404
+        grams = float(body["grams"])
+        cur.execute("INSERT INTO diary (id,user_id,date,name,grams,meal_type,cal,protein,fat,carbs) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (entry_id, user_id, date, food["name"], grams, body.get("meal_type","Обед"),
+             round(food["cal"]*grams/100), round(food["protein"]*grams/100,1),
+             round(food["fat"]*grams/100,1), round(food["carbs"]*grams/100,1)))
     else:
         food = next((f for f in FOODS_DB if f["id"] == body["food_id"]), None)
         if not food:
@@ -372,14 +1835,32 @@ def get_streak():
 
 @app.route("/api/barcode/<barcode>")
 def lookup_barcode(barcode):
-    """Поиск продукта по штрихкоду через Open Food Facts"""
+    user_id = get_user_id()
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Сначала ищем в нашей базе
+    cur.execute("SELECT * FROM custom_foods WHERE barcode=%s LIMIT 1", (barcode,))
+    row = cur.fetchone()
+    if row:
+        d = dict(row)
+        # Сохраняем в избранное пользователя
+        cur.execute("INSERT INTO user_foods (user_id, food_id, food_source, created_at) VALUES (%s,%s,'custom',%s) ON CONFLICT DO NOTHING",
+            (user_id, d['id'], datetime.now().isoformat()))
+        conn.commit()
+        cur.close(); conn.close()
+        return jsonify({"found": True, "id": d['id'], "name": d['name'], "cal": d['cal'],
+                        "protein": d['protein'], "fat": d['fat'], "carbs": d['carbs'], "barcode": barcode, "source": "db"})
+
+    cur.close(); conn.close()
+
+    # Ищем в Open Food Facts
     import urllib.request
     try:
         url = f"https://world.openfoodfacts.org/api/v0/product/{barcode}.json"
         req = urllib.request.Request(url, headers={'User-Agent': 'KaloreiApp/1.0'})
-        with urllib.request.urlopen(req, timeout=5) as r:
-            import json as j
-            data = j.loads(r.read())
+        with urllib.request.urlopen(req, timeout=8) as r:
+            data = json.loads(r.read())
         if data.get('status') != 1:
             return jsonify({"found": False})
         p = data['product']
@@ -389,17 +1870,77 @@ def lookup_barcode(barcode):
         protein = round(float(n.get('proteins_100g', 0) or 0), 1)
         fat = round(float(n.get('fat_100g', 0) or 0), 1)
         carbs = round(float(n.get('carbohydrates_100g', 0) or 0), 1)
-        return jsonify({
-            "found": True,
-            "name": name,
-            "cal": cal,
-            "protein": protein,
-            "fat": fat,
-            "carbs": carbs,
-            "barcode": barcode
-        })
+
+        # Сохраняем в нашу базу автоматически
+        conn2 = get_db()
+        cur2 = conn2.cursor()
+        cur2.execute("""
+            INSERT INTO custom_foods (name, cal, protein, fat, carbs, category, barcode, added_by, created_at)
+            VALUES (%s,%s,%s,%s,%s,'Сканер',%s,%s,%s) RETURNING id
+        """, (name, cal, protein, fat, carbs, barcode, user_id, datetime.now().isoformat()))
+        new_id = cur2.fetchone()['id']
+        # Добавляем в избранное пользователя
+        cur2.execute("INSERT INTO user_foods (user_id, food_id, food_source, created_at) VALUES (%s,%s,'custom',%s)",
+            (user_id, new_id, datetime.now().isoformat()))
+        conn2.commit()
+        cur2.close(); conn2.close()
+
+        return jsonify({"found": True, "id": new_id, "name": name, "cal": cal,
+                        "protein": protein, "fat": fat, "carbs": carbs, "barcode": barcode, "source": "off"})
     except Exception as e:
         return jsonify({"found": False, "error": str(e)})
+
+@app.route("/api/custom_foods", methods=["GET"])
+def get_custom_foods():
+    """Все продукты из нашей расширенной базы"""
+    user_id = get_user_id()
+    q = request.args.get("q", "").lower()
+    conn = get_db()
+    cur = conn.cursor()
+    if q:
+        cur.execute("SELECT * FROM custom_foods WHERE LOWER(name) LIKE %s ORDER BY id DESC LIMIT 50", (f'%{q}%',))
+    else:
+        cur.execute("SELECT * FROM custom_foods ORDER BY id DESC LIMIT 100")
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route("/api/my_foods", methods=["GET"])
+def get_my_foods():
+    """Продукты которые пользователь сканировал или добавлял"""
+    user_id = get_user_id()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT cf.*, uf.created_at as scanned_at
+        FROM user_foods uf
+        JOIN custom_foods cf ON cf.id = uf.food_id
+        WHERE uf.user_id = %s
+        ORDER BY uf.created_at DESC
+        LIMIT 50
+    """, (user_id,))
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route("/api/custom_foods", methods=["POST"])
+def add_custom_food():
+    """Добавить свой продукт вручную"""
+    user_id = get_user_id()
+    body = request.json
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO custom_foods (name, cal, protein, fat, carbs, category, added_by, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id
+    """, (body['name'], int(body['cal']), float(body['protein']), float(body['fat']),
+          float(body['carbs']), body.get('category','Моё'), user_id, datetime.now().isoformat()))
+    new_id = cur.fetchone()['id']
+    cur.execute("INSERT INTO user_foods (user_id, food_id, food_source, created_at) VALUES (%s,%s,'custom',%s)",
+        (user_id, new_id, datetime.now().isoformat()))
+    conn.commit()
+    cur.close(); conn.close()
+    return jsonify({"ok": True, "id": new_id})
 
 @app.route("/api/water", methods=["GET"])
 def get_water():
