@@ -1637,17 +1637,47 @@ def index():
 def get_foods():
     q = request.args.get("q", "").lower()
     cat = request.args.get("category", "")
-    result = FOODS_DB
     if q:
-        result = [f for f in result if q in f["name"].lower()]
+        conn = get_db()
+        cur = conn.cursor()
+        sql = "SELECT id+100000 as id, name, cal, protein, fat, carbs, category FROM custom_foods WHERE LOWER(name) LIKE %s"
+        params = [f"%{q}%"]
+        if cat:
+            sql += " AND category=%s"
+            params.append(cat)
+        sql += " ORDER BY name LIMIT 100"
+        cur.execute(sql, params)
+        db_results = [dict(r) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        local = [f for f in FOODS_DB if q in f["name"].lower()]
+        if cat:
+            local = [f for f in local if f.get("category") == cat]
+        seen = {f["name"].lower() for f in local}
+        for f in db_results:
+            if f["name"].lower() not in seen:
+                local.append(f)
+                seen.add(f["name"].lower())
+        return jsonify(local[:100])
+    result = FOODS_DB
     if cat:
         result = [f for f in result if f.get("category") == cat]
     return jsonify(result)
 
 @app.route("/api/foods/categories")
 def get_categories():
-    cats = list(dict.fromkeys(f["category"] for f in FOODS_DB))
-    return jsonify(cats)
+    local_cats = list(dict.fromkeys(f["category"] for f in FOODS_DB))
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT DISTINCT category FROM custom_foods WHERE category IS NOT NULL ORDER BY category")
+        db_cats = [r["category"] for r in cur.fetchall()]
+    except:
+        db_cats = []
+    cur.close()
+    conn.close()
+    all_cats = local_cats + [c for c in db_cats if c not in local_cats]
+    return jsonify(all_cats)
 
 @app.route("/api/diary", methods=["GET"])
 def get_diary():
