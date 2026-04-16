@@ -1640,21 +1640,58 @@ def get_foods():
 
     # Если есть поисковый запрос — ищем в обеих таблицах
     if q:
+        # Словарь русско-английских переводов для поиска
+        RU_EN = {
+            'шоколад':'chocolate','молоко':'milk','хлеб':'bread','курица':'chicken',
+            'говядина':'beef','свинина':'pork','рыба':'fish','яйцо':'egg','яйца':'egg',
+            'сыр':'cheese','йогурт':'yogurt','творог':'cottage','кефир':'kefir',
+            'масло':'butter oil','сахар':'sugar','мёд':'honey','мед':'honey',
+            'овсянка':'oatmeal oat','рис':'rice','гречка':'buckwheat','макароны':'pasta',
+            'картошка':'potato','картофель':'potato','помидор':'tomato','огурец':'cucumber',
+            'яблоко':'apple','банан':'banana','апельсин':'orange','клубника':'strawberry',
+            'орехи':'nuts','миндаль':'almond','арахис':'peanut','кешью':'cashew',
+            'кофе':'coffee','чай':'tea','сок':'juice','вода':'water','пиво':'beer',
+            'вино':'wine','мороженое':'ice cream','торт':'cake','печенье':'cookie biscuit',
+            'пицца':'pizza','суши':'sushi','бургер':'burger','чипсы':'chips crisps',
+            'протеин':'protein whey','гейнер':'gainer','батончик':'bar',
+            'авокадо':'avocado','лосось':'salmon','тунец':'tuna','креветки':'shrimp',
+            'капуста':'cabbage','морковь':'carrot','лук':'onion','чеснок':'garlic',
+            'виноград':'grape','персик':'peach','слива':'plum','черника':'blueberry',
+            'колбаса':'sausage','ветчина':'ham','бекон':'bacon','сосиски':'hotdog sausage',
+            'кола':'cola','спрайт':'sprite','фанта':'fanta','энергетик':'energy red bull',
+            'снэкс':'snacks','мюсли':'muesli granola','хлопья':'flakes cereal',
+        }
+        
+        q_lower = q.lower()
+        search_terms = [q_lower]
+        
+        # Если запрос на русском — добавляем английский перевод
+        if any('Ѐ' <= c <= 'ӿ' for c in q_lower):
+            for ru, en in RU_EN.items():
+                if ru in q_lower or q_lower in ru:
+                    search_terms.extend(en.split())
+                    break
+
         conn = get_db()
         cur = conn.cursor()
-        sql = "SELECT id+100000 as id, name, cal, protein, fat, carbs, category FROM custom_foods WHERE LOWER(name) LIKE %s"
-        params = [f"%{q}%"]
+        
+        # Ищем по всем вариантам
+        conditions = " OR ".join(["LOWER(name) LIKE %s"] * len(search_terms))
+        params = [f"%{t}%" for t in search_terms]
+        sql = f"SELECT id+100000 as id, name, cal, protein, fat, carbs, category FROM custom_foods WHERE ({conditions})"
         if cat:
             sql += " AND category=%s"
             params.append(cat)
-        sql += " ORDER BY name LIMIT 100"
+        sql += " ORDER BY CASE WHEN LOWER(name) LIKE %s THEN 0 ELSE 1 END, name LIMIT 100"
+        params.append(f"%{q_lower}%")
+        
         cur.execute(sql, params)
         db_results = [dict(r) for r in cur.fetchall()]
         cur.close()
         conn.close()
 
         # Добавляем из встроенной базы
-        local = [f for f in FOODS_DB if q in f["name"].lower()]
+        local = [f for f in FOODS_DB if q_lower in f["name"].lower()]
         if cat:
             local = [f for f in local if f.get("category") == cat]
 
