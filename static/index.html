@@ -1090,12 +1090,27 @@ function selTab(el,mt){
   el.classList.add('active');
 }
 
+let searchTimeout = null;
 function filterFoods(){
-  const q=document.getElementById('search-input').value.toLowerCase();
-  let result = allFoods.length ? allFoods : foods;
-  if(activeCategory) result = result.filter(f=>f.category===activeCategory);
-  if(q) result = result.filter(f=>f.name.toLowerCase().includes(q));
-  renderFoods(result);
+  const q = document.getElementById('search-input').value.toLowerCase();
+  
+  if (!q) {
+    // Без запроса — показываем локальные продукты
+    let result = allFoods.length ? allFoods : foods;
+    if(activeCategory) result = result.filter(f=>f.category===activeCategory);
+    renderFoods(result);
+    return;
+  }
+
+  // С запросом — ищем на сервере (с задержкой 300мс)
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(async () => {
+    document.getElementById('food-list').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">🔍 Поиск...</div>';
+    let url = '/api/foods?q=' + encodeURIComponent(q);
+    if(activeCategory) url += '&category=' + encodeURIComponent(activeCategory);
+    const results = await api(url);
+    renderFoods(results);
+  }, 300);
 }
 
 function renderFoods(list){
