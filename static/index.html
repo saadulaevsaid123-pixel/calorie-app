@@ -1141,8 +1141,9 @@ async function loadStats(){
   const goal = profile.goal||2000;
 
   document.getElementById('stats-chart').innerHTML=week.map((d,i)=>`
-    <div class="s-bar-wrap">
-      <div class="s-bar ${i===6?'today':''}" style="height:${Math.round(d.cal/mx*68)}px"></div>
+    <div class="s-bar-wrap" onclick="${d.cal>0?`openDayDetail('${d.date}')`:''}">
+      ${d.cal>0?`<div style="font-size:9px;color:var(--text3)">${d.cal}</div>`:''}
+      <div class="s-bar ${i===6?'today':''}" style="height:${Math.round(d.cal/mx*68)}px;cursor:${d.cal>0?'pointer':'default'};${d.cal>goal?'background:var(--red)':''}" ></div>
       <div class="s-bar-lbl">${d.day}</div>
     </div>
   `).join('');
@@ -1941,8 +1942,8 @@ async function renderCalendarSubpage() {
   const el = document.getElementById('calendar-content');
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)">Загрузка...</div>';
 
-  const [week, prof, weightLogs, streak] = await Promise.all([
-    api('/api/week'),
+  const [monthData, prof, weightLogs, streak] = await Promise.all([
+    api('/api/month'),
     api('/api/profile'),
     api('/api/weight'),
     api('/api/streak')
@@ -1956,18 +1957,15 @@ async function renderCalendarSubpage() {
   // Weight change
   let weightDiff = null;
   if (weightLogs.length >= 2) {
-    const latest = weightLogs[0].weight;
-    const oldest = weightLogs[weightLogs.length-1].weight;
-    weightDiff = +(latest - oldest).toFixed(1);
+    weightDiff = +(weightLogs[0].weight - weightLogs[weightLogs.length-1].weight).toFixed(1);
   } else if (weightLogs.length === 1) {
     weightDiff = 0;
   }
 
-  // Days with food logged (from week)
-  const activeDays = week.filter(d => d.cal > 0).length;
-  const successDays = week.filter(d => d.cal > 0 && d.cal <= goal).length;
+  // Build set of active dates from month data
+  const activeDatesMap = {};
+  monthData.forEach(d => { activeDatesMap[d.date] = d; });
 
-  // Build calendar for current month
   const year = now.getFullYear();
   const month = now.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
@@ -1976,8 +1974,9 @@ async function renderCalendarSubpage() {
   const dayNames = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
   const adjustedFirst = (firstDay + 6) % 7;
 
-  // Get diary data for this month (use week data for last 7 days)
-  const activeDatesSet = new Set(week.filter(d=>d.cal>0).map(d=>d.date));
+  // Count active and success days in month
+  const activeDaysMonth = monthData.filter(d => d.total_cal > 0).length;
+  const successDaysMonth = monthData.filter(d => d.total_cal > 0 && d.total_cal <= goal).length;
 
   let calHtml = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px">`;
   dayNames.forEach(d => {
@@ -1985,24 +1984,25 @@ async function renderCalendarSubpage() {
   });
   calHtml += '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
 
-  for (let i = 0; i < adjustedFirst; i++) {
-    calHtml += '<div></div>';
-  }
+  for (let i = 0; i < adjustedFirst; i++) calHtml += '<div></div>';
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = d === now.getDate();
-    const hasData = activeDatesSet.has(dateStr);
+    const dayData = activeDatesMap[dateStr];
+    const hasData = !!dayData;
     const isFuture = d > now.getDate();
+    const isOver = hasData && dayData.total_cal > goal;
 
     let bg = 'var(--bg3)';
     let color = 'var(--text3)';
     let extra = '';
     if (isToday) { bg = 'var(--green)'; color = '#000'; extra = 'font-weight:800'; }
+    else if (hasData && isOver) { bg = 'rgba(255,77,109,.25)'; color = 'var(--red)'; }
     else if (hasData) { bg = 'rgba(61,220,132,.25)'; color = 'var(--green)'; }
-    else if (isFuture) { bg = 'transparent'; color = 'var(--text3)'; }
+    else if (isFuture) { bg = 'transparent'; color = 'var(--bg3)'; }
 
-    calHtml += `<div style="aspect-ratio:1;border-radius:50%;background:${bg};color:${color};display:flex;align-items:center;justify-content:center;font-size:13px;${extra}">${d}</div>`;
+    calHtml += `<div onclick="openDayDetail('${dateStr}')" style="aspect-ratio:1;border-radius:50%;background:${bg};color:${color};display:flex;align-items:center;justify-content:center;font-size:13px;cursor:${hasData?'pointer':'default'};${extra}">${d}</div>`;
   }
   calHtml += '</div>';
 
@@ -2010,18 +2010,22 @@ async function renderCalendarSubpage() {
     <div style="background:var(--bg2);border-radius:16px;padding:16px;margin-bottom:12px">
       <div style="font-size:14px;font-weight:700;color:var(--text2);text-align:center;margin-bottom:14px">${monthNames[month]} ${year}</div>
       ${calHtml}
+      <div style="display:flex;gap:12px;margin-top:12px;justify-content:center">
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:50%;background:rgba(61,220,132,.4)"></div>В норме</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:50%;background:rgba(255,77,109,.4)"></div>Превышение</div>
+      </div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
       <div style="background:var(--bg2);border-radius:14px;padding:16px">
-        <div style="font-size:24px;font-weight:800;color:var(--green)">${daysSinceJoin}</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">Дней активности</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">с начала использования</div>
+        <div style="font-size:24px;font-weight:800;color:var(--green)">${activeDaysMonth}/${daysInMonth}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Активных дней</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">в этом месяце</div>
       </div>
       <div style="background:var(--bg2);border-radius:14px;padding:16px">
-        <div style="font-size:24px;font-weight:800;color:var(--yellow)">${successDays}/7</div>
+        <div style="font-size:24px;font-weight:800;color:var(--yellow)">${successDaysMonth}/${activeDaysMonth||1}</div>
         <div style="font-size:12px;color:var(--text2);margin-top:4px">Успешных дней</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">за последнюю неделю</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">в пределах нормы</div>
       </div>
       <div style="background:var(--bg2);border-radius:14px;padding:16px">
         <div style="font-size:24px;font-weight:800;color:var(--blue)">${streak.longest_streak || 0}</div>
@@ -2036,25 +2040,46 @@ async function renderCalendarSubpage() {
         <div style="font-size:11px;color:var(--text3);margin-top:2px">за всё время</div>
       </div>
     </div>
-
-    <div style="background:var(--bg2);border-radius:16px;overflow:hidden">
-      <div style="padding:14px 16px;font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">
-        Активность за неделю
-      </div>
-      ${week.map(d => {
-        const pct = d.cal > 0 ? Math.min(Math.round(d.cal/goal*100), 100) : 0;
-        const color = d.cal > goal ? 'var(--red)' : d.cal > 0 ? 'var(--green)' : 'var(--bg3)';
-        return `<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
-          <div style="font-size:13px;color:var(--text2);width:28px">${d.day}</div>
-          <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:.5s"></div>
-          </div>
-          <div style="font-size:13px;font-weight:700;width:60px;text-align:right;color:${d.cal>0?'var(--text)':'var(--text3)'}">${d.cal>0?d.cal+' кк':'—'}</div>
-        </div>`;
-      }).join('')}
-    </div>
   `;
 }
+
+async function openDayDetail(date) {
+  const entries = await api('/api/diary?date=' + date);
+  if (!entries.length) return;
+
+  const prof = cachedProfile || {};
+  const goal = prof.goal || 2000;
+  const total = entries.reduce((s,e)=>s+e.cal,0);
+  const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const d = new Date(date);
+  const dateStr = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+
+  const modal = document.createElement('div');
+  modal.className = 'overlay open';
+  modal.innerHTML = `
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:18px;font-weight:800">${dateStr}</div>
+        <div style="font-size:16px;font-weight:700;color:${total<=goal?'var(--green)':'var(--red)'}">${total} ккал</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:12px;overflow:hidden;margin-bottom:16px">
+        ${entries.map(e=>`
+          <div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:600">${e.name}</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px">${e.grams}г · ${e.meal_type} · Б:${e.protein}г Ж:${e.fat}г У:${e.carbs}г</div>
+            </div>
+            <div style="font-size:14px;font-weight:700;color:var(--green)">${e.cal}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn-ghost" onclick="this.closest('.overlay').remove()">Закрыть</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
 
 // ── HISTORY SUBPAGE ───────────────────────────────────────────────────────────
 async function renderHistorySubpage() {

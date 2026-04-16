@@ -1637,6 +1637,8 @@ def index():
 def get_foods():
     q = request.args.get("q", "").lower()
     cat = request.args.get("category", "")
+
+    # Если есть поисковый запрос — ищем в обеих таблицах
     if q:
         conn = get_db()
         cur = conn.cursor()
@@ -1650,15 +1652,21 @@ def get_foods():
         db_results = [dict(r) for r in cur.fetchall()]
         cur.close()
         conn.close()
+
+        # Добавляем из встроенной базы
         local = [f for f in FOODS_DB if q in f["name"].lower()]
         if cat:
             local = [f for f in local if f.get("category") == cat]
+
+        # Объединяем: сначала локальные, потом из БД
         seen = {f["name"].lower() for f in local}
         for f in db_results:
             if f["name"].lower() not in seen:
                 local.append(f)
                 seen.add(f["name"].lower())
         return jsonify(local[:100])
+
+    # Без запроса — только встроенная база + фильтр по категории
     result = FOODS_DB
     if cat:
         result = [f for f in result if f.get("category") == cat]
@@ -1666,6 +1674,7 @@ def get_foods():
 
 @app.route("/api/foods/categories")
 def get_categories():
+    # Категории из обеих таблиц
     local_cats = list(dict.fromkeys(f["category"] for f in FOODS_DB))
     conn = get_db()
     cur = conn.cursor()
@@ -1834,6 +1843,25 @@ def get_week_macros():
         "carbs": round(float(row["total_carbs"]) / days, 1),
         "days": int(row["days"])
     })
+
+@app.route("/api/month")
+def get_month():
+    user_id = get_user_id()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT date, COALESCE(SUM(cal),0) as total_cal,
+               COALESCE(SUM(protein),0) as total_protein,
+               COALESCE(SUM(fat),0) as total_fat,
+               COALESCE(SUM(carbs),0) as total_carbs
+        FROM diary
+        WHERE user_id=%s AND date >= (CURRENT_DATE - INTERVAL '30 days')::text
+        GROUP BY date ORDER BY date
+    """, (user_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
 
 @app.route("/api/week")
 def get_week():
