@@ -51,7 +51,34 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .diary-topbar-left p { font-size: 12px; color: var(--text2); margin-top: 2px; }
 
 /* FIRE BUTTON */
-.fire-btn { position: relative; background: none; border: none; cursor: pointer; padding: 4px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+.fire-btn { position: relative; background: none; border: none; cursor: pointer; padding: 4px; width: 40px; height: 44px; display: flex; align-items: center; justify-content: center; }
+.cal-btn { position: relative; background: none; border: none; cursor: pointer; padding: 4px; width: 40px; height: 44px; display: flex; align-items: center; justify-content: center; }
+.topbar-icons { display: flex; align-items: center; gap: 2px; }
+
+/* ONBOARDING */
+.onboarding { position: fixed; inset: 0; background: var(--bg); z-index: 500; display: flex; flex-direction: column; overflow: hidden; }
+.ob-slide { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 32px; opacity: 0; transform: translateX(60px); transition: all .5s cubic-bezier(0.4,0,0.2,1); pointer-events: none; }
+.ob-slide.active { opacity: 1; transform: translateX(0); pointer-events: all; }
+.ob-slide.exit { opacity: 0; transform: translateX(-60px); }
+.ob-icon { font-size: 80px; margin-bottom: 24px; animation: ob-float 3s ease-in-out infinite; }
+@keyframes ob-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.ob-title { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 12px; line-height: 1.2; }
+.ob-sub { font-size: 16px; color: var(--text2); text-align: center; line-height: 1.6; }
+.ob-dots { display: flex; gap: 8px; margin-bottom: 32px; }
+.ob-dot { width: 8px; height: 8px; border-radius: 4px; background: var(--bg3); transition: all .3s; }
+.ob-dot.active { width: 24px; background: var(--green); }
+.ob-bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 24px 32px 48px; }
+.ob-form { width: 100%; }
+.ob-input { width: 100%; padding: 16px; border: 2px solid var(--bg3); border-radius: 16px; background: var(--bg2); color: var(--text); font-size: 18px; font-weight: 600; font-family: inherit; outline: none; text-align: center; margin-bottom: 12px; transition: border-color .2s; }
+.ob-input:focus { border-color: var(--green); }
+.ob-goal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.ob-goal-btn { padding: 16px 12px; border-radius: 16px; border: 2px solid var(--bg3); background: var(--bg2); color: var(--text2); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; text-align: center; transition: all .2s; }
+.ob-goal-btn.selected { border-color: var(--green); background: rgba(61,220,132,.12); color: var(--green); }
+.ob-goal-icon { font-size: 28px; margin-bottom: 6px; display: block; }
+.ob-btn { width: 100%; background: var(--green); color: #000; border: none; border-radius: 16px; padding: 18px; font-size: 17px; font-weight: 800; cursor: pointer; font-family: inherit; transition: transform .1s; }
+.ob-btn:active { transform: scale(0.97); }
+.ob-skip { width: 100%; background: none; border: none; color: var(--text3); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 10px; padding: 8px; }
+.ob-bg-circle { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(61,220,132,.08), transparent 70%); pointer-events: none; }
 .fire-svg { width: 36px; height: 36px; transition: filter .3s; }
 .fire-svg.active { filter: drop-shadow(0 0 6px #ff6b00) drop-shadow(0 0 3px #ff8c00); animation: flicker 1.8s ease-in-out infinite; }
 .fire-svg.inactive { filter: grayscale(1) opacity(.35); }
@@ -237,7 +264,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <h2>Сегодня <span id="week-num" style="font-size:13px;color:var(--text2);font-weight:500"></span></h2>
       <p id="today-label"></p>
     </div>
-    <button class="fire-btn" onclick="openSubpage('subpage-streak')">
+    <div class="topbar-icons">
+      <button class="fire-btn" onclick="openSubpage('subpage-streak')">
       <svg class="fire-svg inactive" id="fire-emoji" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="fg1" cx="50%" cy="80%" r="60%">
@@ -258,7 +286,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <ellipse cx="50" cy="78" rx="10" ry="14" fill="#FFFDE7" opacity="0.7"/>
       </svg>
       <span class="fire-badge" id="fire-badge"></span>
-    </button>
+      </button>
+      <button class="cal-btn" onclick="openSubpage('subpage-calendar')">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="4" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8" fill="none"/>
+          <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="1.8"/>
+          <rect x="7" y="13" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.7"/>
+          <rect x="10.5" y="13" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.7"/>
+          <rect x="14" y="13" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.7"/>
+        </svg>
+      </button>
+    </div>
   </div>
   <div class="week-strip" id="week-strip"></div>
   <div class="macro-strip" onclick="openSubpage('subpage-summary')" style="cursor:pointer">
@@ -459,6 +499,89 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <button onclick="openAddWeightSheet()" style="margin-left:auto;background:var(--green);color:#000;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Добавить</button>
   </div>
   <div id="weight-subpage-content" style="padding:16px"></div>
+</div>
+
+<!-- ONBOARDING -->
+<div class="onboarding" id="onboarding" style="display:none">
+  <div class="ob-bg-circle" style="width:400px;height:400px;top:-100px;right:-100px"></div>
+  <div class="ob-bg-circle" style="width:300px;height:300px;bottom:-50px;left:-80px"></div>
+
+  <!-- Slide 1: Welcome -->
+  <div class="ob-slide active" id="ob-slide-0">
+    <div class="ob-icon">🥗</div>
+    <div class="ob-title">Добро пожаловать в Kalorei</div>
+    <div class="ob-sub">Твой личный помощник по питанию. Считай калории, следи за прогрессом и достигай целей.</div>
+  </div>
+
+  <!-- Slide 2: Features -->
+  <div class="ob-slide" id="ob-slide-1">
+    <div class="ob-icon">📊</div>
+    <div class="ob-title">Всё под контролем</div>
+    <div class="ob-sub">Дневник питания, трекер веса, водный баланс и серии активности — всё в одном месте.</div>
+  </div>
+
+  <!-- Slide 3: Goal -->
+  <div class="ob-slide" id="ob-slide-2">
+    <div style="font-size:40px;margin-bottom:20px">🎯</div>
+    <div class="ob-title" style="font-size:22px;margin-bottom:20px">Какая у тебя цель?</div>
+    <div class="ob-goal-grid" id="ob-goals">
+      <button class="ob-goal-btn" onclick="selectObGoal('lose',this)"><span class="ob-goal-icon">🔥</span>Похудение</button>
+      <button class="ob-goal-btn" onclick="selectObGoal('maintain',this)"><span class="ob-goal-icon">⚖️</span>Поддержание</button>
+      <button class="ob-goal-btn" onclick="selectObGoal('gain_weight',this)"><span class="ob-goal-icon">📈</span>Набор веса</button>
+      <button class="ob-goal-btn" onclick="selectObGoal('muscle',this)"><span class="ob-goal-icon">💪</span>Набор мышц</button>
+    </div>
+  </div>
+
+  <!-- Slide 4: Body params -->
+  <div class="ob-slide" id="ob-slide-3">
+    <div style="font-size:40px;margin-bottom:16px">📏</div>
+    <div class="ob-title" style="font-size:22px;margin-bottom:20px">Параметры тела</div>
+    <input class="ob-input" type="number" inputmode="numeric" id="ob-age" placeholder="Возраст">
+    <input class="ob-input" type="number" inputmode="decimal" id="ob-weight" placeholder="Вес (кг)">
+    <input class="ob-input" type="number" inputmode="numeric" id="ob-height" placeholder="Рост (см)">
+    <div style="display:flex;gap:10px;margin-bottom:0">
+      <button class="ob-goal-btn" id="ob-male" onclick="selectObGender('male')" style="flex:1"><span class="ob-goal-icon">♂️</span>Мужской</button>
+      <button class="ob-goal-btn" id="ob-female" onclick="selectObGender('female')" style="flex:1"><span class="ob-goal-icon">♀️</span>Женский</button>
+    </div>
+  </div>
+
+  <!-- Slide 5: Ready -->
+  <div class="ob-slide" id="ob-slide-4">
+    <div class="ob-icon">🚀</div>
+    <div class="ob-title">Всё готово!</div>
+    <div class="ob-sub" id="ob-ready-text">Твоя норма рассчитана. Начнём отслеживать питание!</div>
+  </div>
+
+  <!-- Bottom controls -->
+  <div class="ob-bottom">
+    <div class="ob-dots" style="justify-content:center" id="ob-dots">
+      <div class="ob-dot active"></div>
+      <div class="ob-dot"></div>
+      <div class="ob-dot"></div>
+      <div class="ob-dot"></div>
+      <div class="ob-dot"></div>
+    </div>
+    <button class="ob-btn" id="ob-next-btn" onclick="obNext()">Далее →</button>
+    <button class="ob-skip" onclick="obSkip()">Пропустить</button>
+  </div>
+</div>
+
+<!-- SUBPAGE: CALENDAR -->
+<div class="subpage" id="subpage-calendar">
+  <div class="subpage-header">
+    <button class="back-btn" onclick="closeSubpage('subpage-calendar')">‹</button>
+    <div class="subpage-title">📅 Статистика месяца</div>
+  </div>
+  <div id="calendar-content" style="padding:16px"></div>
+</div>
+
+<!-- SUBPAGE: HISTORY -->
+<div class="subpage" id="subpage-history">
+  <div class="subpage-header">
+    <button class="back-btn" onclick="closeSubpage('subpage-history')">‹</button>
+    <div class="subpage-title">📋 История питания</div>
+  </div>
+  <div id="history-content" style="padding:16px"></div>
 </div>
 
 <!-- NAV -->
@@ -1686,8 +1809,325 @@ function selectGender(g) {
   }
 }
 
-loadDiary();
-loadWater();
+// ── ONBOARDING ──────────────────────────────────────────────────────────────
+let obSlide = 0;
+let obGoal = '';
+let obGender = 'male';
+const OB_TOTAL = 5;
+
+function checkOnboarding() {
+  const done = localStorage.getItem('ob_done');
+  if (!done) {
+    document.getElementById('onboarding').style.display = 'flex';
+  }
+}
+
+function obNext() {
+  const btn = document.getElementById('ob-next-btn');
+
+  if (obSlide === 2 && !obGoal) {
+    // Shake if no goal selected
+    btn.style.animation = 'none';
+    btn.textContent = 'Выбери цель!';
+    setTimeout(() => { btn.textContent = 'Далее →'; }, 1500);
+    return;
+  }
+
+  if (obSlide === OB_TOTAL - 1) {
+    // Last slide - finish
+    obFinish();
+    return;
+  }
+
+  if (obSlide === OB_TOTAL - 2) {
+    // Before last slide - calculate
+    obCalculate();
+  }
+
+  goToObSlide(obSlide + 1);
+}
+
+function goToObSlide(n) {
+  document.getElementById(`ob-slide-${obSlide}`).classList.remove('active');
+  document.getElementById(`ob-slide-${obSlide}`).classList.add('exit');
+  setTimeout(() => {
+    document.getElementById(`ob-slide-${obSlide}`).classList.remove('exit');
+  }, 500);
+  obSlide = n;
+  document.getElementById(`ob-slide-${obSlide}`).classList.add('active');
+
+  // Update dots
+  document.querySelectorAll('.ob-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === obSlide);
+  });
+
+  // Update button
+  const btn = document.getElementById('ob-next-btn');
+  btn.textContent = obSlide === OB_TOTAL - 1 ? '🚀 Начать!' : 'Далее →';
+}
+
+function selectObGoal(goal, el) {
+  obGoal = goal;
+  document.querySelectorAll('.ob-goal-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function selectObGender(g) {
+  obGender = g;
+  document.getElementById('ob-male').classList.toggle('selected', g === 'male');
+  document.getElementById('ob-female').classList.toggle('selected', g === 'female');
+}
+
+function obCalculate() {
+  const age = parseInt(document.getElementById('ob-age').value) || 25;
+  const weight = parseFloat(document.getElementById('ob-weight').value) || 70;
+  const height = parseFloat(document.getElementById('ob-height').value) || 170;
+
+  const bmr = obGender === 'male'
+    ? 10*weight + 6.25*height - 5*age + 5
+    : 10*weight + 6.25*height - 5*age - 161;
+
+  const act = 1.55;
+  const adj = obGoal==='lose'?-500:obGoal==='gain_weight'?400:obGoal==='muscle'?300:0;
+  const goalCal = Math.round(bmr * act + adj);
+
+  const macros = {
+    lose:        {p: Math.round(weight*2.0), f: Math.round(weight*0.8)},
+    maintain:    {p: Math.round(weight*1.6), f: Math.round(weight*0.9)},
+    gain_weight: {p: Math.round(weight*1.5), f: Math.round(weight*1.0)},
+    muscle:      {p: Math.round(weight*2.2), f: Math.round(weight*0.8)},
+  }[obGoal] || {p: Math.round(weight*1.6), f: Math.round(weight*0.9)};
+
+  const carbs = Math.max(Math.round((goalCal - macros.p*4 - macros.f*9) / 4), 50);
+
+  const goalNames = {lose:'Похудение',maintain:'Поддержание',gain_weight:'Набор веса',muscle:'Набор мышц'};
+  document.getElementById('ob-ready-text').innerHTML =
+    `Цель: <strong>${goalNames[obGoal]}</strong><br>Калории: <strong style="color:var(--green)">${goalCal} ккал/день</strong><br>Б: ${macros.p}г · Ж: ${macros.f}г · У: ${carbs}г`;
+
+  // Save profile
+  const profileData = {
+    goal: goalCal,
+    protein_goal: macros.p,
+    fat_goal: macros.f,
+    carbs_goal: carbs,
+    goal_type: obGoal,
+    age, weight, height,
+    gender: obGender,
+    joined_date: new Date().toISOString().split('T')[0]
+  };
+  api('/api/profile', {method:'POST', body: JSON.stringify(profileData)});
+}
+
+function obFinish() {
+  localStorage.setItem('ob_done', '1');
+  const ob = document.getElementById('onboarding');
+  ob.style.transition = 'opacity .5s';
+  ob.style.opacity = '0';
+  setTimeout(() => { ob.style.display = 'none'; }, 500);
+  loadDiary();
+  loadWater();
+}
+
+function obSkip() {
+  localStorage.setItem('ob_done', '1');
+  document.getElementById('onboarding').style.display = 'none';
+}
+
+// Init gender selection
+document.getElementById('ob-male').classList.add('selected');
+
+// ── CALENDAR SUBPAGE ─────────────────────────────────────────────────────────
+async function renderCalendarSubpage() {
+  const el = document.getElementById('calendar-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)">Загрузка...</div>';
+
+  const [week, prof, weightLogs, streak] = await Promise.all([
+    api('/api/week'),
+    api('/api/profile'),
+    api('/api/weight'),
+    api('/api/streak')
+  ]);
+
+  const now = new Date();
+  const joined = prof.joined_date ? new Date(prof.joined_date) : now;
+  const daysSinceJoin = Math.floor((now - joined) / 86400000) + 1;
+  const goal = prof.goal || 2000;
+
+  // Weight change
+  let weightDiff = null;
+  if (weightLogs.length >= 2) {
+    const latest = weightLogs[0].weight;
+    const oldest = weightLogs[weightLogs.length-1].weight;
+    weightDiff = +(latest - oldest).toFixed(1);
+  } else if (weightLogs.length === 1) {
+    weightDiff = 0;
+  }
+
+  // Days with food logged (from week)
+  const activeDays = week.filter(d => d.cal > 0).length;
+  const successDays = week.filter(d => d.cal > 0 && d.cal <= goal).length;
+
+  // Build calendar for current month
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const dayNames = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  const adjustedFirst = (firstDay + 6) % 7;
+
+  // Get diary data for this month (use week data for last 7 days)
+  const activeDatesSet = new Set(week.filter(d=>d.cal>0).map(d=>d.date));
+
+  let calHtml = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px">`;
+  dayNames.forEach(d => {
+    calHtml += `<div style="text-align:center;font-size:11px;color:var(--text3);font-weight:600;padding:4px 0">${d}</div>`;
+  });
+  calHtml += '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+
+  for (let i = 0; i < adjustedFirst; i++) {
+    calHtml += '<div></div>';
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = d === now.getDate();
+    const hasData = activeDatesSet.has(dateStr);
+    const isFuture = d > now.getDate();
+
+    let bg = 'var(--bg3)';
+    let color = 'var(--text3)';
+    let extra = '';
+    if (isToday) { bg = 'var(--green)'; color = '#000'; extra = 'font-weight:800'; }
+    else if (hasData) { bg = 'rgba(61,220,132,.25)'; color = 'var(--green)'; }
+    else if (isFuture) { bg = 'transparent'; color = 'var(--text3)'; }
+
+    calHtml += `<div style="aspect-ratio:1;border-radius:50%;background:${bg};color:${color};display:flex;align-items:center;justify-content:center;font-size:13px;${extra}">${d}</div>`;
+  }
+  calHtml += '</div>';
+
+  el.innerHTML = `
+    <div style="background:var(--bg2);border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700;color:var(--text2);text-align:center;margin-bottom:14px">${monthNames[month]} ${year}</div>
+      ${calHtml}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div style="background:var(--bg2);border-radius:14px;padding:16px">
+        <div style="font-size:24px;font-weight:800;color:var(--green)">${daysSinceJoin}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Дней активности</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">с начала использования</div>
+      </div>
+      <div style="background:var(--bg2);border-radius:14px;padding:16px">
+        <div style="font-size:24px;font-weight:800;color:var(--yellow)">${successDays}/7</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Успешных дней</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">за последнюю неделю</div>
+      </div>
+      <div style="background:var(--bg2);border-radius:14px;padding:16px">
+        <div style="font-size:24px;font-weight:800;color:var(--blue)">${streak.longest_streak || 0}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Рекорд серии</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">дней подряд</div>
+      </div>
+      <div style="background:var(--bg2);border-radius:14px;padding:16px">
+        <div style="font-size:24px;font-weight:800;color:${weightDiff===null?'var(--text2)':weightDiff<0?'var(--green)':weightDiff>0?'var(--red)':'var(--text2)'}">
+          ${weightDiff===null?'—':(weightDiff>0?'+':'')+weightDiff+' кг'}
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Изменение веса</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">за всё время</div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg2);border-radius:16px;overflow:hidden">
+      <div style="padding:14px 16px;font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">
+        Активность за неделю
+      </div>
+      ${week.map(d => {
+        const pct = d.cal > 0 ? Math.min(Math.round(d.cal/goal*100), 100) : 0;
+        const color = d.cal > goal ? 'var(--red)' : d.cal > 0 ? 'var(--green)' : 'var(--bg3)';
+        return `<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+          <div style="font-size:13px;color:var(--text2);width:28px">${d.day}</div>
+          <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:.5s"></div>
+          </div>
+          <div style="font-size:13px;font-weight:700;width:60px;text-align:right;color:${d.cal>0?'var(--text)':'var(--text3)'}">${d.cal>0?d.cal+' кк':'—'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ── HISTORY SUBPAGE ───────────────────────────────────────────────────────────
+async function renderHistorySubpage() {
+  const el = document.getElementById('history-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)">Загрузка...</div>';
+
+  const week = await api('/api/week');
+  const prof = cachedProfile || await api('/api/profile');
+  const goal = prof.goal || 2000;
+
+  // Load diary for each day
+  const days = [];
+  for (const d of week) {
+    if (d.cal > 0) {
+      const entries = await api(`/api/diary?date=${d.date}`);
+      days.push({...d, entries});
+    }
+  }
+
+  if (!days.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px">
+      <div style="font-size:48px;margin-bottom:12px">🍽</div>
+      <div style="font-weight:700;margin-bottom:6px">Нет записей за неделю</div>
+      <div style="font-size:13px;color:var(--text2)">Начни добавлять еду в дневник!</div>
+    </div>`;
+    return;
+  }
+
+  const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  el.innerHTML = days.reverse().map(d => {
+    const date = new Date(d.date);
+    const dateStr = `${date.getDate()} ${months[date.getMonth()]}`;
+    const isOk = d.cal <= goal;
+    return `
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:15px;font-weight:700">${dateStr}</div>
+          <div style="font-size:13px;font-weight:700;color:${isOk?'var(--green)':'var(--red)'}">${d.cal} / ${goal} ккал</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:12px;overflow:hidden">
+          ${d.entries.map(e => `
+            <div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">
+              <div style="flex:1">
+                <div style="font-size:14px;font-weight:600">${e.name}</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:2px">${e.grams}г · ${e.meal_type}</div>
+              </div>
+              <div style="font-size:14px;font-weight:700;color:var(--green)">${e.cal}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Hook into openSubpage
+const _origOpenSubpage2 = openSubpage;
+function openSubpage(id) {
+  document.getElementById(id).classList.add('open');
+  if(id==='subpage-streak') renderStreakSubpage();
+  if(id==='subpage-stats') renderStatsSubpage();
+  if(id==='subpage-summary') renderSummarySubpage();
+  if(id==='subpage-weight') renderWeightSubpage();
+  if(id==='subpage-calendar') renderCalendarSubpage();
+  if(id==='subpage-history') renderHistorySubpage();
+}
+
+
+checkOnboarding();
+if (localStorage.getItem('ob_done')) {
+  loadDiary();
+  loadWater();
+}
 </script>
 </body>
 </html>
