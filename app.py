@@ -58,6 +58,18 @@ def init_db():
         )
     """)
     cur.execute("""
+        CREATE TABLE IF NOT EXISTS activity_log (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            name TEXT NOT NULL,
+            calories_burned INTEGER NOT NULL,
+            duration_minutes INTEGER,
+            activity_type TEXT DEFAULT 'other',
+            created_at TEXT
+        )
+    """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS weight_log (
             id SERIAL PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -2118,6 +2130,61 @@ def delete_weight(date):
     cur.close()
     conn.close()
     return jsonify({"ok": True})
+
+
+@app.route("/api/activity", methods=["GET"])
+def get_activity():
+    user_id = get_user_id()
+    date = request.args.get("date", today_str())
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM activity_log WHERE user_id=%s AND date=%s ORDER BY id", (user_id, date))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route("/api/activity", methods=["POST"])
+def add_activity():
+    user_id = get_user_id()
+    body = request.json
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO activity_log (user_id, date, name, calories_burned, duration_minutes, activity_type, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s)
+    """, (user_id, today_str(), body.get("name"), int(body.get("calories_burned",0)),
+          body.get("duration_minutes"), body.get("activity_type","other"), datetime.now().isoformat()))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/activity/<int:activity_id>", methods=["DELETE"])
+def delete_activity(activity_id):
+    user_id = get_user_id()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM activity_log WHERE id=%s AND user_id=%s", (activity_id, user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/activity/week")
+def get_activity_week():
+    user_id = get_user_id()
+    conn = get_db()
+    cur = conn.cursor()
+    result = []
+    for i in range(6, -1, -1):
+        date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        cur.execute("SELECT COALESCE(SUM(calories_burned),0) as total FROM activity_log WHERE user_id=%s AND date=%s", (user_id, date))
+        row = cur.fetchone()
+        result.append({"date": date, "burned": int(row["total"])})
+    cur.close()
+    conn.close()
+    return jsonify(result)
 
 
 if __name__ == "__main__":

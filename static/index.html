@@ -344,6 +344,13 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
   </div>
   <div class="meal-list" id="meals-container"></div>
 
+  <!-- ACTIVITY SHORTCUT -->
+  <div style="padding:0 12px 8px;display:flex;justify-content:flex-end">
+    <button onclick="openSubpage('subpage-activity')" style="background:var(--bg2);border:none;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">
+      🏃 Активность <span id="burned-today" style="color:var(--green);margin-left:4px"></span>
+    </button>
+  </div>
+
   <!-- WATER BALANCE -->
   <div class="water-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -2041,6 +2048,7 @@ function obFinish() {
   setTimeout(() => { ob.style.display = 'none'; }, 500);
   loadDiary();
   loadWater();
+  loadBurnedToday();
 }
 
 function obSkip() {
@@ -2123,6 +2131,38 @@ async function renderCalendarSubpage() {
   el.innerHTML = `
     <div style="background:var(--bg2);border-radius:16px;padding:16px;margin-bottom:12px">
       <div style="font-size:14px;font-weight:700;color:var(--text2);text-align:center;margin-bottom:14px">${monthNames[month]} ${year}</div>
+      
+      <!-- Month chart -->
+      ${(() => {
+        if (monthData.length < 2) return '';
+        const vals = monthData.map(d => d.total_cal);
+        const maxV = Math.max(...vals, goal, 1);
+        const w = 100 / (daysInMonth);
+        const points = monthData.map(d => {
+          const dayNum = parseInt(d.date.split('-')[2]);
+          const x = ((dayNum - 0.5) / daysInMonth * 100).toFixed(1);
+          const y = (60 - (d.total_cal / maxV * 55)).toFixed(1);
+          return x + ',' + y;
+        }).join(' ');
+        const goalY = (60 - (goal / maxV * 55)).toFixed(1);
+        return `<div style="margin-bottom:14px">
+          <svg width="100%" height="70" viewBox="0 0 100 65" preserveAspectRatio="none" style="overflow:visible">
+            <line x1="0" y1="${goalY}" x2="100" y2="${goalY}" stroke="var(--yellow)" stroke-width="0.5" stroke-dasharray="2,2" opacity="0.6"/>
+            <polyline points="${points}" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+            ${monthData.map(d => {
+              const dayNum = parseInt(d.date.split('-')[2]);
+              const x = ((dayNum - 0.5) / daysInMonth * 100).toFixed(1);
+              const y = (60 - (d.total_cal / maxV * 55)).toFixed(1);
+              const col = d.total_cal > goal ? '#D9606B' : 'var(--green)';
+              return `<circle cx="${x}" cy="${y}" r="1.5" fill="${col}" vector-effect="non-scaling-stroke"/>`;
+            }).join('')}
+          </svg>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+            <span>1</span><span>${Math.round(daysInMonth/2)}</span><span>${daysInMonth}</span>
+          </div>
+        </div>`;
+      })()}
+      
       ${calHtml}
       <div style="display:flex;gap:12px;margin-top:12px;justify-content:center">
         <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:50%;background:rgba(61,220,132,.4)"></div>В норме</div>
@@ -2339,6 +2379,139 @@ function openSubpage(id) {
   if(id==='subpage-calendar') renderCalendarSubpage();
   if(id==='subpage-history') renderHistorySubpage();
   if(id==='subpage-settings') openSubpageSettings();
+  if(id==='subpage-activity') renderActivitySubpage();
+}
+
+
+// ── ACTIVITY TRACKER ──────────────────────────────────────────────────────────
+let selectedActivityType = 'running';
+
+const ACTIVITY_CALORIES = {
+    running: 10,    // ккал/мин
+    cycling: 8,
+    swimming: 9,
+    gym: 7,
+    walking: 4,
+    other: 6,
+};
+
+const ACTIVITY_NAMES = {
+    running: 'Бег', cycling: 'Велосипед', swimming: 'Плавание',
+    gym: 'Силовая тренировка', walking: 'Ходьба', other: 'Активность',
+};
+
+function selectActivityType(type, btn) {
+    selectedActivityType = type;
+    document.querySelectorAll('#activity-types .ob-goal-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    calcActivityCal();
+}
+
+function calcActivityCal() {
+    const mins = parseInt(document.getElementById('activity-duration').value) || 0;
+    if (mins > 0) {
+        const cal = Math.round(mins * ACTIVITY_CALORIES[selectedActivityType]);
+        document.getElementById('activity-cal').value = cal;
+    }
+}
+
+function openAddActivity() {
+    document.getElementById('activity-name').value = '';
+    document.getElementById('activity-duration').value = '';
+    document.getElementById('activity-cal').value = '';
+    document.getElementById('activity-sheet').classList.add('open');
+}
+
+async function saveActivity() {
+    const name = document.getElementById('activity-name').value || ACTIVITY_NAMES[selectedActivityType];
+    const duration = parseInt(document.getElementById('activity-duration').value) || 0;
+    const cal = parseInt(document.getElementById('activity-cal').value) || 0;
+    if (!cal) { alert('Введите количество сожжённых калорий'); return; }
+    await api('/api/activity', {method:'POST', body: JSON.stringify({
+        name, calories_burned: cal, duration_minutes: duration, activity_type: selectedActivityType
+    })});
+    closeOverlay('activity-sheet');
+    renderActivitySubpage();
+    loadBurnedToday();
+}
+
+async function loadBurnedToday() {
+    const activities = await api('/api/activity');
+    const total = activities.reduce((s,a) => s+a.calories_burned, 0);
+    const el = document.getElementById('burned-today');
+    if (el) el.textContent = total > 0 ? '-' + total + ' ккал' : '';
+}
+
+async function renderActivitySubpage() {
+    const el = document.getElementById('activity-content');
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text2)">Загрузка...</div>';
+
+    const [activities, weekData] = await Promise.all([
+        api('/api/activity'),
+        api('/api/activity/week')
+    ]);
+
+    const totalBurned = activities.reduce((s,a) => s+a.calories_burned, 0);
+    const weekTotal = weekData.reduce((s,d) => s+d.burned, 0);
+    const maxBurned = Math.max(...weekData.map(d=>d.burned), 1);
+    const days = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+    el.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            <div style="background:var(--bg2);border-radius:14px;padding:16px">
+                <div style="font-size:26px;font-weight:800;color:#D9606B">${totalBurned}</div>
+                <div style="font-size:12px;color:var(--text2);margin-top:4px">ккал сегодня</div>
+            </div>
+            <div style="background:var(--bg2);border-radius:14px;padding:16px">
+                <div style="font-size:26px;font-weight:800;color:var(--orange)">${weekTotal}</div>
+                <div style="font-size:12px;color:var(--text2);margin-top:4px">ккал за неделю</div>
+            </div>
+        </div>
+
+        <div style="background:var(--bg2);border-radius:16px;padding:16px;margin-bottom:14px">
+            <div style="font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Активность за неделю</div>
+            <div style="display:flex;align-items:flex-end;gap:6px;height:80px;margin-bottom:8px">
+                ${weekData.map((d,i) => {
+                    const h = Math.round(d.burned/maxBurned*68);
+                    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end">
+                        ${d.burned>0?`<div style="font-size:9px;color:var(--text3)">${d.burned}</div>`:''}
+                        <div style="width:100%;border-radius:5px 5px 0 0;background:${i===6?'#D9606B':'var(--bg3)'};min-height:4px;height:${h}px"></div>
+                        <div style="font-size:10px;color:var(--text3);font-weight:600">${days[i]}</div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>
+
+        <div style="background:var(--bg2);border-radius:16px;overflow:hidden">
+            <div style="padding:14px 16px;font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">
+                Сегодня
+            </div>
+            ${activities.length ? activities.map(a => `
+                <div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
+                    <div style="flex:1">
+                        <div style="font-size:14px;font-weight:600">${a.name}</div>
+                        <div style="font-size:11px;color:var(--text2);margin-top:2px">
+                            ${a.duration_minutes ? a.duration_minutes+' мин · ' : ''}${a.activity_type}
+                        </div>
+                    </div>
+                    <div style="font-size:14px;font-weight:700;color:#D9606B;margin-right:10px">-${a.calories_burned} ккал</div>
+                    <button onclick="deleteActivity(${a.id})" style="background:rgba(217,96,107,.12);border:none;color:#D9606B;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px">✕</button>
+                </div>
+            `).join('') : `
+                <div style="padding:30px;text-align:center">
+                    <div style="font-size:40px;margin-bottom:10px">🏃</div>
+                    <div style="font-weight:700;margin-bottom:6px">Нет активности сегодня</div>
+                    <div style="font-size:13px;color:var(--text2)">Нажми + чтобы добавить тренировку</div>
+                </div>
+            `}
+        </div>
+    `;
+}
+
+async function deleteActivity(id) {
+    await api('/api/activity/' + id, {method:'DELETE'});
+    renderActivitySubpage();
+    loadBurnedToday();
 }
 
 
@@ -2346,6 +2519,7 @@ checkOnboarding();
 if (localStorage.getItem('ob_done')) {
   loadDiary();
   loadWater();
+  loadBurnedToday();
 }
 </script>
 </body>
