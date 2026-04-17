@@ -345,10 +345,17 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
   <div class="meal-list" id="meals-container"></div>
 
   <!-- ACTIVITY SHORTCUT -->
-  <div style="padding:0 12px 8px;display:flex;justify-content:flex-end">
-    <button onclick="openSubpage('subpage-activity')" style="background:var(--bg2);border:none;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">
-      🏃 Активность <span id="burned-today" style="color:var(--green);margin-left:4px"></span>
-    </button>
+  <div class="water-card" onclick="openSubpage('subpage-activity')" style="cursor:pointer;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:20px">🏃</span>
+        <span style="font-size:15px;font-weight:700">Активность</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="burned-today" style="font-size:13px;color:#D9606B;font-weight:700"></span>
+        <span style="font-size:18px;color:var(--text3)">›</span>
+      </div>
+    </div>
   </div>
 
   <!-- WATER BALANCE -->
@@ -684,6 +691,51 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
     </div>
 
     <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px">Kalorei v1.0</div>
+  </div>
+</div>
+
+<!-- SUBPAGE: ACTIVITY -->
+<div class="subpage" id="subpage-activity">
+  <div class="subpage-header">
+    <button class="back-btn" onclick="closeSubpage('subpage-activity')">‹</button>
+    <div class="subpage-title">🏃 Активность</div>
+    <button onclick="openAddActivity()" style="margin-left:auto;background:var(--green);color:#000;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Добавить</button>
+  </div>
+  <div id="activity-content" style="padding:16px"></div>
+</div>
+
+<!-- ADD ACTIVITY SHEET -->
+<div class="overlay" id="activity-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">🏃 Добавить активность</div>
+    <div style="margin-bottom:12px">
+      <div class="f-lbl">Тип активности</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px" id="activity-types">
+        <button class="ob-goal-btn selected" onclick="selectActivityType('running',this)"><span class="ob-goal-icon">🏃</span>Бег</button>
+        <button class="ob-goal-btn" onclick="selectActivityType('cycling',this)"><span class="ob-goal-icon">🚴</span>Велосипед</button>
+        <button class="ob-goal-btn" onclick="selectActivityType('swimming',this)"><span class="ob-goal-icon">🏊</span>Плавание</button>
+        <button class="ob-goal-btn" onclick="selectActivityType('gym',this)"><span class="ob-goal-icon">🏋️</span>Зал</button>
+        <button class="ob-goal-btn" onclick="selectActivityType('walking',this)"><span class="ob-goal-icon">🚶</span>Ходьба</button>
+        <button class="ob-goal-btn" onclick="selectActivityType('other',this)"><span class="ob-goal-icon">⚡</span>Другое</button>
+      </div>
+    </div>
+    <div class="f-row">
+      <div class="f-lbl">Название (необязательно)</div>
+      <input class="f-inp" id="activity-name" placeholder="Например: Утренняя пробежка">
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <div style="flex:1">
+        <div class="f-lbl">Длительность (мин)</div>
+        <input class="f-inp" type="number" inputmode="numeric" id="activity-duration" placeholder="30" oninput="calcActivityCal()">
+      </div>
+      <div style="flex:1">
+        <div class="f-lbl">Сожжено (ккал)</div>
+        <input class="f-inp" type="number" inputmode="numeric" id="activity-cal" placeholder="200">
+      </div>
+    </div>
+    <button class="btn-green" onclick="saveActivity()">💾 Сохранить</button>
+    <button class="btn-ghost" onclick="closeOverlay('activity-sheet')">Отмена</button>
   </div>
 </div>
 
@@ -2132,37 +2184,29 @@ async function renderCalendarSubpage() {
     <div style="background:var(--bg2);border-radius:16px;padding:16px;margin-bottom:12px">
       <div style="font-size:14px;font-weight:700;color:var(--text2);text-align:center;margin-bottom:14px">${monthNames[month]} ${year}</div>
       
-      <!-- Month chart -->
-      ${(() => {
-        if (monthData.length < 2) return '';
-        const vals = monthData.map(d => d.total_cal);
-        const maxV = Math.max(...vals, goal, 1);
-        const w = 100 / (daysInMonth);
-        const points = monthData.map(d => {
-          const dayNum = parseInt(d.date.split('-')[2]);
-          const x = ((dayNum - 0.5) / daysInMonth * 100).toFixed(1);
-          const y = (60 - (d.total_cal / maxV * 55)).toFixed(1);
-          return x + ',' + y;
-        }).join(' ');
-        const goalY = (60 - (goal / maxV * 55)).toFixed(1);
-        return `<div style="margin-bottom:14px">
-          <svg width="100%" height="70" viewBox="0 0 100 65" preserveAspectRatio="none" style="overflow:visible">
-            <line x1="0" y1="${goalY}" x2="100" y2="${goalY}" stroke="var(--yellow)" stroke-width="0.5" stroke-dasharray="2,2" opacity="0.6"/>
-            <polyline points="${points}" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-            ${monthData.map(d => {
-              const dayNum = parseInt(d.date.split('-')[2]);
-              const x = ((dayNum - 0.5) / daysInMonth * 100).toFixed(1);
-              const y = (60 - (d.total_cal / maxV * 55)).toFixed(1);
-              const col = d.total_cal > goal ? '#D9606B' : 'var(--green)';
-              return `<circle cx="${x}" cy="${y}" r="1.5" fill="${col}" vector-effect="non-scaling-stroke"/>`;
+      ${monthData.length > 1 ? (() => {
+        const maxCal = Math.max(...monthData.map(d=>d.total_cal), goal, 1);
+        return `<div style="margin-bottom:16px">
+          <div style="display:flex;align-items:flex-end;gap:1px;height:56px;margin-bottom:4px">
+            ${Array.from({length:daysInMonth},(_,i)=>{
+              const d = i+1;
+              const dateStr = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+              const dayData = activeDatesMap[dateStr];
+              const cal = dayData ? dayData.total_cal : 0;
+              const h = cal > 0 ? Math.max(Math.round(cal/maxCal*52),4) : 2;
+              const isToday = d === now.getDate();
+              const isOver = cal > goal;
+              const col = isToday ? 'var(--green)' : isOver ? '#D9606B' : cal>0 ? 'rgba(61,220,132,.6)' : 'var(--bg3)';
+              return '<div onclick="'+( cal>0 ? 'openDayDetail(\''+dateStr+'\')'  : '')+'" style="flex:1;background:'+col+';height:'+h+'px;border-radius:2px 2px 0 0;cursor:'+(cal>0?'pointer':'default')+'"></div>';
             }).join('')}
-          </svg>
+          </div>
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
             <span>1</span><span>${Math.round(daysInMonth/2)}</span><span>${daysInMonth}</span>
           </div>
+          <div style="height:1px;background:var(--border);margin:10px 0 14px"></div>
         </div>`;
-      })()}
-      
+      })() : ''}
+
       ${calHtml}
       <div style="display:flex;gap:12px;margin-top:12px;justify-content:center">
         <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:50%;background:rgba(61,220,132,.4)"></div>В норме</div>
