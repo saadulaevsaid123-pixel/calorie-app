@@ -17,7 +17,7 @@
   --border: #2A2D35;
   --yellow: #F5C518;
   --blue: #4A9EFF;
-  --red: #FF4D6D;
+  --red: #D9606B;
   --orange: #FF8C00;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -178,7 +178,7 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
 .food-row-name { font-size: 14px; font-weight: 600; }
 .food-row-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
 .food-row-cal { font-size: 14px; font-weight: 700; color: var(--green); margin-right: 6px; flex-shrink: 0; }
-.food-row-del { background: rgba(255,77,109,.12); border: none; color: var(--red); width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.food-row-del { background: rgba(217,96,107,.12); border: none; color: var(--red); width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
 /* ADD PAGE */
 .add-topbar { padding: 14px 16px 10px; }
@@ -1004,7 +1004,7 @@ function renderDiary(){
 
   document.getElementById('eaten-val').textContent=Math.round(t.cal);
   document.getElementById('remain-val').textContent=Math.abs(rem);
-  document.getElementById('remain-val').style.color=rem>=0?'var(--green)':'var(--red)';
+  document.getElementById('remain-val').style.color=rem>=0?'var(--green)':'#D9606B';
   document.getElementById('remain-lbl').textContent=rem>=0?'осталось':'превышение';
   document.getElementById('m-goal').textContent=goal;
   document.getElementById('m-protein').textContent=t.p.toFixed(0)+'г';
@@ -1257,7 +1257,7 @@ async function loadStats(){
   document.getElementById('stats-chart').innerHTML=week.map((d,i)=>`
     <div class="s-bar-wrap" onclick="${d.cal>0?`openDayDetail('${d.date}')`:''}">
       ${d.cal>0?`<div style="font-size:9px;color:var(--text3)">${d.cal}</div>`:''}
-      <div class="s-bar ${i===6?'today':''}" style="height:${Math.round(d.cal/mx*68)}px;cursor:${d.cal>0?'pointer':'default'};${d.cal>goal?'background:var(--red)':''}" ></div>
+      <div class="s-bar ${i===6?'today':''}" style="height:${Math.round(d.cal/mx*68)}px;cursor:${d.cal>0?'pointer':'default'};${d.cal>goal?'background:#D9606B':''}" ></div>
       <div class="s-bar-lbl">${d.day}</div>
     </div>
   `).join('');
@@ -1507,7 +1507,7 @@ async function renderStatsSubpage() {
       </div>
       <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;font-size:12px">
         <span style="color:var(--text2)">Цель: ${goal} ккал/день</span>
-        <span style="color:${avg<=goal?'var(--green)':'var(--red)'}">${avg<=goal?'В норме':'Превышение'}</span>
+        <span style="color:${avg<=goal?'var(--green)':'#D9606B'}">${avg<=goal?'В норме':'Превышение'}</span>
       </div>
     </div>
 
@@ -1562,7 +1562,7 @@ function renderSummarySubpage() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         ${[
           {v: Math.round(t.cal)+' ккал', l: 'Съедено', c: 'var(--green)'},
-          {v: Math.abs(goal-Math.round(t.cal))+' ккал', l: t.cal<=goal?'Осталось':'Превышение', c: t.cal<=goal?'var(--green)':'var(--red)'},
+          {v: Math.abs(goal-Math.round(t.cal))+' ккал', l: t.cal<=goal?'Осталось':'Превышение', c: t.cal<=goal?'var(--green)':'#D9606B'},
           {v: t.p.toFixed(0)+'г', l: 'Белки', c: 'var(--green)'},
           {v: t.c.toFixed(0)+'г', l: 'Углеводы', c: 'var(--orange)'},
           {v: t.f.toFixed(0)+'г', l: 'Жиры', c: 'var(--blue)'},
@@ -1684,7 +1684,7 @@ async function openScanner() {
   } catch(e) {
     console.error('Scanner error:', e);
     document.getElementById('barcode-result').innerHTML = `
-      <div style="background:rgba(255,77,109,.1);border-radius:12px;padding:14px;margin-bottom:12px;color:var(--red);font-size:13px">
+      <div style="background:rgba(217,96,107,.1);border-radius:12px;padding:14px;margin-bottom:12px;color:#D9606B;font-size:13px">
         ⚠️ Камера недоступна. Введите штрихкод вручную.
       </div>`;
   }
@@ -1827,7 +1827,7 @@ async function renderWeightSubpage() {
         <div style="font-size:11px;color:var(--text2);margin-top:3px">Сейчас кг</div>
       </div>
       <div style="background:var(--bg2);border-radius:14px;padding:14px;text-align:center">
-        <div style="font-size:22px;font-weight:800;color:${diff<0?'var(--green)':diff>0?'var(--red)':'var(--text2)'}">${diff>0?'+':''}${diff}</div>
+        <div style="font-size:22px;font-weight:800;color:${diff<0?'var(--green)':diff>0?'#D9606B':'var(--text2)'}">${diff>0?'+':''}${diff}</div>
         <div style="font-size:11px;color:var(--text2);margin-top:3px">Изменение кг</div>
       </div>
       <div style="background:var(--bg2);border-radius:14px;padding:14px;text-align:center">
@@ -1863,7 +1863,7 @@ async function renderWeightSubpage() {
             <div style="font-size:15px;font-weight:700">${l.weight} кг</div>
             <div style="font-size:12px;color:var(--text2);margin-top:2px">${l.date}</div>
           </div>
-          <button onclick="deleteWeight('${l.date}')" style="background:rgba(255,77,109,.1);border:none;color:var(--red);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px">✕</button>
+          <button onclick="deleteWeight('${l.date}')" style="background:rgba(217,96,107,.1);border:none;color:#D9606B;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px">✕</button>
         </div>
       `).join('')}
     </div>
@@ -2112,7 +2112,7 @@ async function renderCalendarSubpage() {
     let color = 'var(--text3)';
     let extra = '';
     if (isToday) { bg = 'var(--green)'; color = '#000'; extra = 'font-weight:800'; }
-    else if (hasData && isOver) { bg = 'rgba(255,77,109,.25)'; color = 'var(--red)'; }
+    else if (hasData && isOver) { bg = 'rgba(217,96,107,.25)'; color = '#D9606B'; }
     else if (hasData) { bg = 'rgba(61,220,132,.25)'; color = 'var(--green)'; }
     else if (isFuture) { bg = 'transparent'; color = 'var(--bg3)'; }
 
@@ -2126,7 +2126,7 @@ async function renderCalendarSubpage() {
       ${calHtml}
       <div style="display:flex;gap:12px;margin-top:12px;justify-content:center">
         <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:50%;background:rgba(61,220,132,.4)"></div>В норме</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:50%;background:rgba(255,77,109,.4)"></div>Превышение</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:50%;background:rgba(217,96,107,.4)"></div>Превышение</div>
       </div>
     </div>
 
@@ -2147,7 +2147,7 @@ async function renderCalendarSubpage() {
         <div style="font-size:11px;color:var(--text3);margin-top:2px">дней подряд</div>
       </div>
       <div style="background:var(--bg2);border-radius:14px;padding:16px">
-        <div style="font-size:24px;font-weight:800;color:${weightDiff===null?'var(--text2)':weightDiff<0?'var(--green)':weightDiff>0?'var(--red)':'var(--text2)'}">
+        <div style="font-size:24px;font-weight:800;color:${weightDiff===null?'var(--text2)':weightDiff<0?'var(--green)':weightDiff>0?'#D9606B':'var(--text2)'}">
           ${weightDiff===null?'—':(weightDiff>0?'+':'')+weightDiff+' кг'}
         </div>
         <div style="font-size:12px;color:var(--text2);margin-top:4px">Изменение веса</div>
@@ -2177,7 +2177,7 @@ async function openDayDetail(date) {
       <div class="sheet-handle"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div style="font-size:18px;font-weight:800">${dateStr}</div>
-        <div style="font-size:16px;font-weight:700;color:${total<=goal?'var(--green)':'var(--red)'}">${total} ккал</div>
+        <div style="font-size:16px;font-weight:700;color:${total<=goal?'var(--green)':'#D9606B'}">${total} ккал</div>
       </div>
       <div style="background:var(--bg3);border-radius:12px;overflow:hidden;margin-bottom:16px">
         ${entries.map(e=>`
@@ -2244,7 +2244,7 @@ async function renderHistorySubpage() {
       <div style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <div style="font-size:15px;font-weight:700">${dateStr}</div>
-          <div style="font-size:13px;font-weight:700;color:${isOk?'var(--green)':'var(--red)'}">${d.cal} / ${goal} ккал</div>
+          <div style="font-size:13px;font-weight:700;color:${isOk?'var(--green)':'#D9606B'}">${d.cal} / ${goal} ккал</div>
         </div>
         <div style="background:var(--bg2);border-radius:12px;overflow:hidden">
           ${d.entries.map(e => `
