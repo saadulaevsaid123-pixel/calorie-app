@@ -79,6 +79,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .ob-btn:active { transform: scale(0.97); }
 .ob-skip { width: 100%; background: none; border: none; color: var(--text3); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 10px; padding: 8px; }
 .ob-bg-circle { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(61,220,132,.08), transparent 70%); pointer-events: none; }
+/* Toggle switch */
+input:checked + span { background: var(--green) !important; }
+input:checked + span::after { transform: translateX(20px); }
+span.toggle::after { content:""; position:absolute; width:18px; height:18px; border-radius:50%; background:white; top:3px; left:3px; transition:.3s; }
 .fire-svg { width: 36px; height: 36px; transition: filter .3s; }
 .fire-svg.active { filter: drop-shadow(0 0 6px #ff6b00) drop-shadow(0 0 3px #ff8c00); animation: flicker 1.8s ease-in-out infinite; }
 .fire-svg.inactive { filter: grayscale(1) opacity(.35); }
@@ -411,7 +415,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <div class="profile-user-name" id="p-name-display">Пользователь</div>
         <div class="profile-user-sub">Бесплатный аккаунт</div>
       </div>
-      <div class="profile-avatar">👤</div>
+      <button onclick="openSubpage('subpage-settings')" style="background:var(--bg3);border:none;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 15.75C9.93 15.75 8.25 14.07 8.25 12C8.25 9.93 9.93 8.25 12 8.25C14.07 8.25 15.75 9.93 15.75 12C15.75 14.07 14.07 15.75 12 15.75ZM12 9.75C10.76 9.75 9.75 10.76 9.75 12C9.75 13.24 10.76 14.25 12 14.25C13.24 14.25 14.25 13.24 14.25 12C14.25 10.76 13.24 9.75 12 9.75Z" fill="currentColor"/>
+          <path d="M15.21 22.1898C15 22.1898 14.79 22.1598 14.58 22.1098C13.96 21.9398 13.44 21.5498 13.11 20.9998L12.99 20.7998C12.4 19.7798 11.59 19.7798 11 20.7998L10.89 20.9898C10.56 21.5498 10.04 21.9498 9.42 22.1098C8.79 22.2798 8.14 22.1898 7.59 21.8598L5.87 20.8698C5.26 20.5198 4.82 19.9498 4.63 19.2598C4.45 18.5698 4.54 17.8598 4.89 17.2498C5.18 16.7398 5.26 16.2798 5.09 15.9898C4.92 15.6998 4.49 15.5298 3.9 15.5298C2.44 15.5298 1.25 14.3398 1.25 12.8798V11.1198C1.25 9.6598 2.44 8.4698 3.9 8.4698C4.49 8.4698 4.92 8.2998 5.09 8.0098C5.26 7.7198 5.19 7.2598 4.89 6.7498C4.54 6.1398 4.45 5.4198 4.63 4.7398C4.81 4.0498 5.25 3.4798 5.87 3.1298L7.6 2.1398C8.73 1.4698 10.22 1.8598 10.9 3.0098L11.02 3.2098C11.61 4.2298 12.42 4.2298 13.01 3.2098L13.12 3.0198C13.8 1.8598 15.29 1.4698 16.43 2.1498L18.15 3.1398C18.76 3.4898 19.2 4.0598 19.39 4.7498C19.57 5.4398 19.48 6.1498 19.13 6.7598C18.84 7.2698 18.76 7.7298 18.93 8.0198C19.1 8.3098 19.53 8.4798 20.12 8.4798C21.58 8.4798 22.77 9.6698 22.77 11.1298V12.8898C22.77 14.3498 21.58 15.5398 20.12 15.5398C19.53 15.5398 19.1 15.7098 18.93 15.9998C18.76 16.2898 18.83 16.7498 19.13 17.2598C19.48 17.8698 19.58 18.5898 19.39 19.2698C19.21 19.9598 18.77 20.5298 18.15 20.8798L16.42 21.8698C16.04 22.0798 15.63 22.1898 15.21 22.1898Z" fill="currentColor"/>
+        </svg>
+      </button>
     </div>
     <div class="profile-stats-row">
       <div class="profile-stat-btn"><div class="psb-icon">🍽</div><div><div class="psb-val" id="qs-cal">0</div><div class="psb-lbl">ккал сегодня</div></div></div>
@@ -421,19 +430,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div class="settings-list">
     <div class="settings-group">
       <div class="settings-item" onclick="openSheet('goals')">
-        <div class="si-icon" style="background:rgba(61,220,132,.12)">🎯</div>
+        <div class="si-icon" style="background:rgba(61,220,132,.12)"></div>
         <div class="si-label">Цели питания</div>
         <div class="si-right"><span id="s-goal">2000 ккал</span><span class="si-arrow">›</span></div>
       </div>
       <div class="settings-item" onclick="openSheet('body')">
-        <div class="si-icon" style="background:rgba(74,158,255,.12)">💪</div>
+        <div class="si-icon" style="background:rgba(74,158,255,.12)"></div>
         <div class="si-label">Параметры тела</div>
         <div class="si-right"><span id="s-body">—</span><span class="si-arrow">›</span></div>
       </div>
     </div>
     <div class="settings-group">
       <div class="settings-item" onclick="openSubpage('subpage-weight')">
-        <div class="si-icon" style="background:rgba(74,158,255,.12)">📈</div>
+        <div class="si-icon" style="background:rgba(74,158,255,.12)"></div>
         <div class="si-label">Трекер веса</div>
         <div class="si-right"><span id="s-current-weight">—</span><span class="si-arrow">›</span></div>
       </div>
@@ -585,6 +594,94 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <div class="subpage-title">📋 История питания</div>
   </div>
   <div id="history-content" style="padding:16px"></div>
+</div>
+
+<!-- SUBPAGE: SETTINGS -->
+<div class="subpage" id="subpage-settings">
+  <div class="subpage-header">
+    <button class="back-btn" onclick="closeSubpage('subpage-settings')">‹</button>
+    <div class="subpage-title">⚙️ Настройки</div>
+  </div>
+  <div style="padding:16px">
+
+    <div style="font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-left:4px">Профиль</div>
+    <div style="background:var(--bg2);border-radius:16px;overflow:hidden;margin-bottom:16px">
+      <div class="settings-item" onclick="openSheet('body')">
+        <div class="si-label">Параметры тела</div>
+        <div class="si-right"><span id="st-body">—</span><span class="si-arrow">›</span></div>
+      </div>
+      <div class="settings-item" onclick="openSheet('goals')">
+        <div class="si-label">Цели питания</div>
+        <div class="si-right"><span id="st-goal">—</span><span class="si-arrow">›</span></div>
+      </div>
+      <div class="settings-item" onclick="openSheet('calc')">
+        <div class="si-label">Рассчитать норму</div>
+        <div class="si-right"><span class="si-arrow">›</span></div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-left:4px">Трекеры</div>
+    <div style="background:var(--bg2);border-radius:16px;overflow:hidden;margin-bottom:16px">
+      <div class="settings-item" onclick="openSubpage('subpage-weight');closeSubpage('subpage-settings')">
+        <div class="si-label">Трекер веса</div>
+        <div class="si-right"><span id="st-weight">—</span><span class="si-arrow">›</span></div>
+      </div>
+      <div class="settings-item" onclick="openSettingsWater()">
+        <div class="si-label">Цель по воде</div>
+        <div class="si-right"><span id="st-water">2500 мл</span><span class="si-arrow">›</span></div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-left:4px">Уведомления</div>
+    <div style="background:var(--bg2);border-radius:16px;overflow:hidden;margin-bottom:16px">
+      <div class="settings-item">
+        <div class="si-label">Завтрак</div>
+        <div style="margin-left:auto">
+          <label style="position:relative;display:inline-block;width:44px;height:24px">
+            <input type="checkbox" id="notif-breakfast" style="opacity:0;width:0;height:0" onchange="saveNotifPref('breakfast',this.checked)">
+            <span id="toggle-breakfast" style="position:absolute;inset:0;background:var(--bg3);border-radius:12px;cursor:pointer;transition:.3s"></span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-item">
+        <div class="si-label">Обед</div>
+        <div style="margin-left:auto">
+          <label style="position:relative;display:inline-block;width:44px;height:24px">
+            <input type="checkbox" id="notif-lunch" style="opacity:0;width:0;height:0" onchange="saveNotifPref('lunch',this.checked)">
+            <span id="toggle-lunch" style="position:absolute;inset:0;background:var(--bg3);border-radius:12px;cursor:pointer;transition:.3s"></span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-item">
+        <div class="si-label">Ужин</div>
+        <div style="margin-left:auto">
+          <label style="position:relative;display:inline-block;width:44px;height:24px">
+            <input type="checkbox" id="notif-dinner" style="opacity:0;width:0;height:0" onchange="saveNotifPref('dinner',this.checked)">
+            <span id="toggle-dinner" style="position:absolute;inset:0;background:var(--bg3);border-radius:12px;cursor:pointer;transition:.3s"></span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-item">
+        <div class="si-label">Напоминание пить воду</div>
+        <div style="margin-left:auto">
+          <label style="position:relative;display:inline-block;width:44px;height:24px">
+            <input type="checkbox" id="notif-water" style="opacity:0;width:0;height:0" onchange="saveNotifPref('water',this.checked)">
+            <span id="toggle-water" style="position:absolute;inset:0;background:var(--bg3);border-radius:12px;cursor:pointer;transition:.3s"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-left:4px">Приложение</div>
+    <div style="background:var(--bg2);border-radius:16px;overflow:hidden;margin-bottom:16px">
+      <div class="settings-item" onclick="resetOnboarding()">
+        <div class="si-label">Пройти настройку заново</div>
+        <div class="si-right"><span class="si-arrow">›</span></div>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px">Kalorei v1.0</div>
+  </div>
 </div>
 
 <!-- NAV -->
@@ -2182,6 +2279,70 @@ function openSubpage(id) {
   if(id==='subpage-weight') renderWeightSubpage();
   if(id==='subpage-calendar') renderCalendarSubpage();
   if(id==='subpage-history') renderHistorySubpage();
+}
+
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+function openSubpageSettings() {
+  const prof = cachedProfile || {};
+  const el = document.getElementById('st-body');
+  if(el) el.textContent = prof.weight ? prof.weight+'кг' : '—';
+  const el2 = document.getElementById('st-goal');
+  if(el2) el2.textContent = (prof.goal||2000)+' ккал';
+  const el3 = document.getElementById('st-weight');
+  if(el3) el3.textContent = prof.weight ? prof.weight+' кг' : '—';
+  loadNotifPrefs();
+}
+
+function loadNotifPrefs() {
+  ['breakfast','lunch','dinner','water'].forEach(key => {
+    const val = localStorage.getItem('notif_'+key) === 'true';
+    const inp = document.getElementById('notif-'+key);
+    const toggle = document.getElementById('toggle-'+key);
+    if(inp) inp.checked = val;
+    if(toggle) toggle.style.background = val ? 'var(--green)' : 'var(--bg3)';
+  });
+}
+
+function saveNotifPref(key, val) {
+  localStorage.setItem('notif_'+key, val);
+  const toggle = document.getElementById('toggle-'+key);
+  if(toggle) toggle.style.background = val ? 'var(--green)' : 'var(--bg3)';
+}
+
+function openSettingsWater() {
+  const current = document.getElementById('water-goal')?.textContent || '2500';
+  const val = prompt('Цель по воде (мл):', current);
+  if(val && !isNaN(val) && +val > 0) {
+    api('/api/water/goal', {method:'POST', body: JSON.stringify({goal: +val})});
+    const el = document.getElementById('st-water');
+    if(el) el.textContent = val + ' мл';
+    loadWater();
+  }
+}
+
+function resetOnboarding() {
+  if(confirm('Пройти настройку профиля заново?')) {
+    localStorage.removeItem('ob_done');
+    closeSubpage('subpage-settings');
+    document.getElementById('onboarding').style.display = 'flex';
+    document.getElementById('onboarding').style.opacity = '1';
+    obSlide = 0;
+    goToObSlide(0);
+  }
+}
+
+// Hook settings into openSubpage
+const _origOpenSubpageSettings = openSubpage;
+function openSubpage(id) {
+  document.getElementById(id).classList.add('open');
+  if(id==='subpage-streak') renderStreakSubpage();
+  if(id==='subpage-stats') renderStatsSubpage();
+  if(id==='subpage-summary') renderSummarySubpage();
+  if(id==='subpage-weight') renderWeightSubpage();
+  if(id==='subpage-calendar') renderCalendarSubpage();
+  if(id==='subpage-history') renderHistorySubpage();
+  if(id==='subpage-settings') openSubpageSettings();
 }
 
 

@@ -1,0 +1,171 @@
+"""
+Парсер calorizator.ru - российская база продуктов.
+Запуск: DATABASE_URL="..." python3 parse_calorizator.py
+"""
+import psycopg2, os, urllib.request, time, re
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+CATEGORIES = {
+    'beef': 'Мясо',
+    'sausage': 'Мясо',
+    'sea': 'Рыба',
+    'milk': 'Молочные',
+    'cheese': 'Молочные',
+    'egg': 'Молочные',
+    'bread': 'Хлеб',
+    'cereals': 'Крупы',
+    'vegetable': 'Овощи',
+    'mushroom': 'Овощи',
+    'fruit': 'Фрукты',
+    'berry': 'Фрукты',
+    'nut': 'Орехи',
+    'butter': 'Масла',
+    'chocolate': 'Сладкое',
+    'cake': 'Сладкое',
+    'icecream': 'Сладкое',
+    'tort': 'Сладкое',
+    'drink': 'Напитки',
+    'juice': 'Напитки',
+    'alcohol': 'Алкоголь',
+    'snack': 'Снеки',
+    'sport': 'Спортпит',
+    'meal': 'Готовые блюда',
+    'soup': 'Готовые блюда',
+    'salad': 'Готовые блюда',
+    'raw': 'Готовые блюда',
+    'mcdonalds': 'Фастфуд',
+    'kfc': 'Фастфуд',
+    'burger-king': 'Фастфуд',
+    'japan': 'Японская кухня',
+    'baby': 'Детское питание',
+}
+
+BASE = 'https://calorizator.ru'
+
+def fetch(url, retries=3):
+    for i in range(retries):
+        try:
+            req = urllib.request.Request(url, headers={
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0',
+                'Accept-Language': 'ru-RU,ru;q=0.9',
+            })
+            with urllib.request.urlopen(req, timeout=15) as r:
+                return r.read().decode('utf-8', errors='replace')
+        except Exception as e:
+            if i < retries-1:
+                time.sleep(2)
+    return None
+
+def parse_product(html, cat_name):
+    try:
+        name_m = re.search(r'<h1[^>]*itemprop="name"[^>]*>([^<]+)</h1>', html)
+        if not name_m:
+            name_m = re.search(r'<h1[^>]*>([^<]{3,80})</h1>', html)
+        if not name_m:
+            return None
+        name = name_m.group(1).strip()
+
+        def get_val(label):
+            m = re.search(label + r'[^<]*</[^>]+>\s*<[^>]+>([\d.,]+)', html, re.I)
+            if m:
+                try: return round(float(m.group(1).replace(',','.')), 1)
+                except: pass
+            # Try alternative pattern
+            m = re.search(label + r'.*?(\d+[.,]?\d*)\s*г', html, re.I)
+            if m:
+                try: return round(float(m.group(1).replace(',','.')), 1)
+                except: pass
+            return 0.0
+
+        cal_m = re.search(r'(\d+[.,]?\d*)\s*[Кк]кал', html)
+        cal = round(float(cal_m.group(1).replace(',','.'))) if cal_m else 0
+        if cal <= 0: return None
+
+        protein = get_val('Белк')
+        fat = get_val('Жир')
+        carbs = get_val('Углевод')
+
+        return {'name': name, 'cal': cal, 'protein': protein, 'fat': fat, 'carbs': carbs, 'category': cat_name}
+    except:
+        return None
+
+def get_product_links(cat_slug):
+    links = set()
+    page = 0
+    while True:
+        url = f"{BASE}/product/{cat_slug}" + (f"?page={page}" if page > 0 else "")
+        html = fetch(url)
+        if not html:
+            break
+        found = re.findall(r'href="(/product/' + cat_slug + r'/[^"?]+)"', html)
+        if not found:
+            break
+        new = set(found) - links
+        if not new:
+            break
+        links.update(new)
+        page += 1
+        time.sleep(0.5)
+        if page > 30:
+            break
+    return list(links)
+
+def main():
+    print("Подключаемся к базе...")
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    cur.execute("""CREATE TABLE IF NOT EXISTS custom_foods (
+        id SERIAL PRIMARY KEY, name TEXT NOT NULL, cal INTEGER NOT NULL,
+        protein REAL NOT NULL, fat REAL NOT NULL, carbs REAL NOT NULL,
+        category TEXT DEFAULT 'Другое', barcode TEXT, added_by TEXT, created_at TEXT
+    )""")
+    conn.commit()
+    cur.execute("SELECT COUNT(*) FROM custom_foods")
+    print(f"Уже в базе: {cur.fetchone()[0]:,}")
+
+    added = 0
+
+    for cat_slug, cat_name in CATEGORIES.items():
+        print(f"\n📂 {cat_name} ({cat_slug})")
+        links = get_product_links(cat_slug)
+        print(f"  Найдено: {len(links)} продуктов")
+
+        for path in links:
+            try:
+                html = fetch(BASE + path)
+                if not html:
+                    continue
+                p = parse_product(html, cat_name)
+                if not p:
+                    continue
+
+                cur.execute("SELECT id FROM custom_foods WHERE name=%s", (p['name'],))
+                if cur.fetchone():
+                    continue
+
+                cur.execute("""INSERT INTO custom_foods (name,cal,protein,fat,carbs,category,added_by,created_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,'calorizator','2026-01-01')""",
+                    (p['name'], p['cal'], p['protein'], p['fat'], p['carbs'], p['category']))
+                added += 1
+
+                if added % 100 == 0:
+                    conn.commit()
+                    print(f"  ✓ {added} добавлено")
+
+                time.sleep(0.4)
+            except Exception as e:
+                continue
+
+        conn.commit()
+        print(f"  Итого добавлено: {added}")
+
+    cur.execute("SELECT COUNT(*) FROM custom_foods")
+    total = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    print(f"\n✅ Готово! Добавлено: {added}")
+    print(f"📦 Всего в базе: {total:,}")
+
+if __name__ == "__main__":
+    main()
