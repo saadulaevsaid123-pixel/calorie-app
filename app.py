@@ -2187,6 +2187,75 @@ def get_activity_week():
     return jsonify(result)
 
 
+@app.route("/api/analyze_photo", methods=["POST"])
+def analyze_photo():
+    """Анализ фото еды через Google Gemini Vision"""
+    import base64, urllib.request
+    
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+    if not gemini_key:
+        return jsonify({"error": "Gemini API key not configured"}), 500
+    
+    body = request.json
+    image_data = body.get("image")  # base64 строка
+    if not image_data:
+        return jsonify({"error": "No image provided"}), 400
+    
+    # Убираем префикс data:image/...;base64,
+    if "," in image_data:
+        image_data = image_data.split(",")[1]
+    
+    prompt = """Ты эксперт-диетолог. Посмотри на фото еды и определи:
+1. Какие продукты/блюда на фото
+2. Примерный вес каждого в граммах
+3. Калории, белки, жиры, углеводы
+
+Ответь ТОЛЬКО в формате JSON, без markdown, без лишнего текста:
+{
+  "items": [
+    {"name": "Название блюда", "grams": 150, "cal": 200, "protein": 15.0, "fat": 8.0, "carbs": 20.0}
+  ],
+  "total": {"cal": 200, "protein": 15.0, "fat": 8.0, "carbs": 20.0},
+  "description": "Краткое описание что на тарелке"
+}"""
+
+    payload = {
+        "contents": [{
+            "parts": [
+                {"text": prompt},
+                {"inline_data": {"mime_type": "image/jpeg", "data": image_data}}
+            ]
+        }],
+        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1024}
+    }
+    
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=30) as r:
+            result = json.loads(r.read())
+        
+        text = result["candidates"][0]["content"]["parts"][0]["text"]
+        
+        # Парсим JSON из ответа
+        text = text.strip()
+        if "```" in text:
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        
+        food_data = json.loads(text.strip())
+        return jsonify({"ok": True, "data": food_data})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5001, debug=True)

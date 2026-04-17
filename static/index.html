@@ -382,10 +382,14 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
   <div class="add-topbar">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <h2 style="margin:0">Добавить еду</h2>
-      <button onclick="openScanner()" style="background:rgba(61,220,132,.12);border:none;color:var(--green);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h3v3H7zM7 14h3v3H7zM14 7h3v3h-3z"/></svg>
-        Штрихкод
-      </button>
+      <div style="display:flex;gap:8px">
+        <button onclick="openPhotoAnalysis()" style="background:rgba(74,158,255,.12);border:none;color:var(--blue);border-radius:12px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          📸 Фото
+        </button>
+        <button onclick="openScanner()" style="background:rgba(61,220,132,.12);border:none;color:var(--green);border-radius:12px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h3v3H7zM7 14h3v3H7zM14 7h3v3h-3z"/></svg>
+        </button>
+      </div>
     </div>
     <div class="meal-tabs" id="meal-tabs"></div>
   </div>
@@ -736,6 +740,27 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
     </div>
     <button class="btn-green" onclick="saveActivity()">💾 Сохранить</button>
     <button class="btn-ghost" onclick="closeOverlay('activity-sheet')">Отмена</button>
+  </div>
+</div>
+
+<!-- PHOTO ANALYSIS -->
+<div class="subpage" id="subpage-photo">
+  <div class="subpage-header">
+    <button class="back-btn" onclick="closeSubpage('subpage-photo')">‹</button>
+    <div class="subpage-title">📸 Распознать еду</div>
+  </div>
+  <div style="padding:16px">
+    <div style="background:var(--bg2);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px">
+      <div id="photo-preview" style="width:100%;aspect-ratio:4/3;background:var(--bg3);border-radius:12px;margin-bottom:16px;overflow:hidden;display:flex;align-items:center;justify-content:center">
+        <div style="color:var(--text3);font-size:40px">📷</div>
+      </div>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+      <button onclick="document.getElementById('photo-input').click()" class="btn-green" style="margin-bottom:10px">
+        📸 Сделать фото или выбрать
+      </button>
+      <div style="font-size:12px;color:var(--text3)">ИИ определит блюда и посчитает КБЖУ</div>
+    </div>
+    <div id="photo-result"></div>
   </div>
 </div>
 
@@ -2556,6 +2581,110 @@ async function deleteActivity(id) {
     await api('/api/activity/' + id, {method:'DELETE'});
     renderActivitySubpage();
     loadBurnedToday();
+}
+
+
+// ── PHOTO ANALYSIS ────────────────────────────────────────────────────────────
+function openPhotoAnalysis() {
+  document.getElementById('photo-result').innerHTML = '';
+  document.getElementById('photo-preview').innerHTML = '<div style="color:var(--text3);font-size:40px">📷</div>';
+  openSubpage('subpage-photo');
+}
+
+async function handlePhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Показываем превью
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result;
+    
+    // Показываем фото
+    document.getElementById('photo-preview').innerHTML = 
+      `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`;
+    
+    // Показываем загрузку
+    document.getElementById('photo-result').innerHTML = `
+      <div style="background:var(--bg2);border-radius:16px;padding:20px;text-align:center">
+        <div style="font-size:32px;margin-bottom:10px">🤖</div>
+        <div style="font-weight:700;margin-bottom:6px">Анализирую фото...</div>
+        <div style="font-size:13px;color:var(--text2)">ИИ определяет блюда и считает калории</div>
+      </div>`;
+
+    try {
+      const result = await api('/api/analyze_photo', {
+        method: 'POST',
+        body: JSON.stringify({image: base64})
+      });
+
+      if (!result.ok) {
+        document.getElementById('photo-result').innerHTML = `
+          <div style="background:var(--bg2);border-radius:16px;padding:20px;text-align:center">
+            <div style="font-size:32px;margin-bottom:10px">😔</div>
+            <div style="font-weight:700">Не удалось распознать</div>
+            <div style="font-size:13px;color:var(--text2);margin-top:6px">${result.error || 'Попробуй другое фото'}</div>
+          </div>`;
+        return;
+      }
+
+      const data = result.data;
+      window._photoFoods = data.items;
+
+      document.getElementById('photo-result').innerHTML = `
+        <div style="background:var(--bg2);border-radius:16px;overflow:hidden;margin-bottom:12px">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+            <div style="font-size:15px;font-weight:700;margin-bottom:4px">🤖 Результат анализа</div>
+            <div style="font-size:13px;color:var(--text2)">${data.description || ''}</div>
+          </div>
+          ${data.items.map((item, i) => `
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <div style="font-size:14px;font-weight:700">${item.name}</div>
+                <div style="font-size:13px;font-weight:700;color:var(--green)">${item.cal} ккал</div>
+              </div>
+              <div style="font-size:12px;color:var(--text2)">${item.grams}г · Б:${item.protein}г Ж:${item.fat}г У:${item.carbs}г</div>
+            </div>
+          `).join('')}
+          <div style="padding:12px 16px;background:var(--bg3)">
+            <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700">
+              <span>Итого</span>
+              <span style="color:var(--green)">${data.total.cal} ккал</span>
+            </div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">Б:${data.total.protein}г Ж:${data.total.fat}г У:${data.total.carbs}г</div>
+          </div>
+        </div>
+        <button class="btn-green" onclick="addPhotoFoodsToMeal()">+ Добавить в ${activeMeal}</button>
+        <button class="btn-ghost" onclick="closeSubpage('subpage-photo')">Отмена</button>
+      `;
+    } catch(e) {
+      document.getElementById('photo-result').innerHTML = `
+        <div style="background:var(--bg2);border-radius:16px;padding:20px;text-align:center">
+          <div style="font-weight:700;color:#D9606B">Ошибка: ${e.message}</div>
+        </div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function addPhotoFoodsToMeal() {
+  if (!window._photoFoods) return;
+  for (const food of window._photoFoods) {
+    await api('/api/diary', {method:'POST', body: JSON.stringify({
+      food_id: -1,
+      grams: food.grams,
+      meal_type: activeMeal,
+      name: food.name,
+      cal: food.cal,
+      protein: food.protein,
+      fat: food.fat,
+      carbs: food.carbs,
+    })});
+  }
+  closeSubpage('subpage-photo');
+  const [entries, targets] = await Promise.all([api('/api/diary'), api('/api/meal_targets')]);
+  cachedEntries = entries; cachedTargets = targets; mealTargets = targets;
+  showPage('diary', document.querySelectorAll('.nav-btn')[0]);
 }
 
 
