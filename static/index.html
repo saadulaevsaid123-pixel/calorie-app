@@ -1272,22 +1272,37 @@ function filterFoods(){
   const q = document.getElementById('search-input').value.toLowerCase();
   
   if (!q) {
-    // Без запроса — показываем локальные продукты
     let result = allFoods.length ? allFoods : foods;
     if(activeCategory) result = result.filter(f=>f.category===activeCategory);
     renderFoods(result);
     return;
   }
 
-  // С запросом — ищем на сервере (с задержкой 300мс)
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(async () => {
     document.getElementById('food-list').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">🔍 Поиск...</div>';
     let url = '/api/foods?q=' + encodeURIComponent(q);
     if(activeCategory) url += '&category=' + encodeURIComponent(activeCategory);
     const results = await api(url);
-    renderFoods(results);
+    renderFoodsAll(results);
   }, 300);
+}
+
+function renderFoodsAll(list) {
+  if(!list || !list.length) {
+    document.getElementById('food-list').innerHTML = '<div style="padding:30px;text-align:center;color:var(--text2)">Ничего не найдено</div>';
+    return;
+  }
+  document.getElementById('food-list').innerHTML = list.map(f => {
+    const isCustom = f.id > 100000;
+    return `<div class="food-item-row" onclick="${isCustom ? `openAddModalCustom(${f.id},'${f.name.replace(/'/g,"\'")}',${f.cal},${f.protein},${f.fat},${f.carbs})` : `openAddModal(${f.id})`}">
+      <div style="flex:1">
+        <div class="food-item-name">${f.name}</div>
+        <div class="food-item-meta">${f.cal} ккал · Б:${f.protein}г У:${f.carbs}г Ж:${f.fat}г · на 100г</div>
+      </div>
+      <div class="food-item-add">+</div>
+    </div>`;
+  }).join('');
 }
 
 function renderFoods(list){
