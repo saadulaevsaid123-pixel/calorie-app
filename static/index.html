@@ -1282,6 +1282,26 @@ function selTab(el,mt){
 }
 
 let searchTimeout = null;
+function renderFoodsAll(list) {
+  if(!list || !list.length) {
+    document.getElementById('food-list').innerHTML = '<div style="padding:30px;text-align:center;color:var(--text2)">Ничего не найдено</div>';
+    return;
+  }
+  document.getElementById('food-list').innerHTML = list.map(f => {
+    const isCustom = f.id > 100000;
+    const onclick = isCustom
+      ? `openAddModalCustom(${f.id},'${(f.name||'').replace(/'/g,"\\'")}',${f.cal},${f.protein},${f.fat},${f.carbs})`
+      : `openAddModal(${f.id})`;
+    return `<div class="food-item-row" onclick="${onclick}">
+      <div style="flex:1">
+        <div class="food-item-name">${f.name}</div>
+        <div class="food-item-meta">${f.cal} ккал · Б:${f.protein}г У:${f.carbs}г Ж:${f.fat}г · на 100г</div>
+      </div>
+      <div class="food-item-add">+</div>
+    </div>`;
+  }).join('');
+}
+
 function filterFoods(){
   const q = document.getElementById('search-input').value.toLowerCase();
   
