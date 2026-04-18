@@ -1247,18 +1247,32 @@ function openAddModalCustom(id, name, cal, protein, fat, carbs) {
   document.getElementById('add-modal').classList.add('open');
 }
 
-function filterCategory(cat) {
+async function filterCategory(cat) {
   activeCategory = cat;
-  const q = document.getElementById('search-input').value.toLowerCase();
-  let result = allFoods;
-  if(cat) result = result.filter(f=>f.category===cat);
-  if(q) result = result.filter(f=>f.name.toLowerCase().includes(q));
-  renderFoods(result);
+  
+  // Обновляем стили табов
   document.querySelectorAll('#category-tabs div').forEach((el,i)=>{
     const isActive = (i===0&&cat==='') || el.textContent.trim()===cat;
     el.style.background = isActive?'rgba(61,220,132,.15)':'var(--bg3)';
     el.style.color = isActive?'var(--green)':'var(--text2)';
   });
+
+  const q = document.getElementById('search-input').value.toLowerCase();
+  
+  if (!cat) {
+    // Без категории — показываем локальные
+    let result = allFoods.length ? allFoods : foods;
+    if(q) result = result.filter(f=>f.name.toLowerCase().includes(q));
+    renderFoods(result);
+    return;
+  }
+
+  // С категорией — запрашиваем с сервера
+  document.getElementById('food-list').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">Загрузка...</div>';
+  let url = '/api/foods?category=' + encodeURIComponent(cat);
+  if(q) url += '&q=' + encodeURIComponent(q);
+  const results = await api(url);
+  renderFoodsAll(results);
 }
 
 function selTab(el,mt){
@@ -1272,37 +1286,22 @@ function filterFoods(){
   const q = document.getElementById('search-input').value.toLowerCase();
   
   if (!q) {
+    // Без запроса — показываем локальные продукты
     let result = allFoods.length ? allFoods : foods;
     if(activeCategory) result = result.filter(f=>f.category===activeCategory);
     renderFoods(result);
     return;
   }
 
+  // С запросом — ищем на сервере (с задержкой 300мс)
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(async () => {
     document.getElementById('food-list').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">🔍 Поиск...</div>';
     let url = '/api/foods?q=' + encodeURIComponent(q);
     if(activeCategory) url += '&category=' + encodeURIComponent(activeCategory);
     const results = await api(url);
-    renderFoodsAll(results);
+    renderFoods(results);
   }, 300);
-}
-
-function renderFoodsAll(list) {
-  if(!list || !list.length) {
-    document.getElementById('food-list').innerHTML = '<div style="padding:30px;text-align:center;color:var(--text2)">Ничего не найдено</div>';
-    return;
-  }
-  document.getElementById('food-list').innerHTML = list.map(f => {
-    const isCustom = f.id > 100000;
-    return `<div class="food-item-row" onclick="${isCustom ? `openAddModalCustom(${f.id},'${f.name.replace(/'/g,"\'")}',${f.cal},${f.protein},${f.fat},${f.carbs})` : `openAddModal(${f.id})`}">
-      <div style="flex:1">
-        <div class="food-item-name">${f.name}</div>
-        <div class="food-item-meta">${f.cal} ккал · Б:${f.protein}г У:${f.carbs}г Ж:${f.fat}г · на 100г</div>
-      </div>
-      <div class="food-item-add">+</div>
-    </div>`;
-  }).join('');
 }
 
 function renderFoods(list){

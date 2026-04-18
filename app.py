@@ -1715,27 +1715,57 @@ def get_foods():
                 seen.add(f["name"].lower())
         return jsonify(local[:100])
 
-    # Без запроса — только встроенная база + фильтр по категории
-    result = FOODS_DB
+    # Без запроса — показываем из custom_foods если есть категория, иначе встроенные
     if cat:
-        result = [f for f in result if f.get("category") == cat]
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id+100000 as id, name, cal, protein, fat, carbs, category 
+            FROM custom_foods WHERE category=%s ORDER BY name LIMIT 200
+        """, (cat,))
+        db_results = [dict(r) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        local = [f for f in FOODS_DB if f.get("category") == cat]
+        seen = {f["name"].lower() for f in local}
+        for f in db_results:
+            if f["name"].lower() not in seen:
+                local.append(f)
+                seen.add(f["name"].lower())
+        return jsonify(local)
+    
+    result = FOODS_DB
     return jsonify(result)
 
 @app.route("/api/foods/categories")
 def get_categories():
-    # Категории из обеих таблиц
-    local_cats = list(dict.fromkeys(f["category"] for f in FOODS_DB))
+    # Фиксированный порядок категорий
+    ORDERED_CATS = [
+        "Мясо", "Рыба", "Молочные", "Крупы", "Хлеб", "Овощи", "Фрукты",
+        "Орехи", "Масла", "Сладкое", "Снеки", "Напитки", "Алкоголь",
+        "Спортпит", "Завтраки", "Соусы", "Заморозка", "Готовые блюда",
+        "Фастфуд", "Пицца", "Японская кухня", "Кофейни", "ВкусВилл",
+        "Молочные бренды", "Детское питание", "Другое"
+    ]
     conn = get_db()
     cur = conn.cursor()
-    try:
-        cur.execute("SELECT DISTINCT category FROM custom_foods WHERE category IS NOT NULL ORDER BY category")
-        db_cats = [r["category"] for r in cur.fetchall()]
-    except:
-        db_cats = []
+    # Берём только категории у которых есть продукты
+    cur.execute("""
+        SELECT DISTINCT category FROM custom_foods 
+        WHERE category IS NOT NULL AND category != ''
+        UNION
+        SELECT DISTINCT category FROM (VALUES %s) AS t(category)
+    """ % ",".join(f"('{c}')" for c in set(f["category"] for f in FOODS_DB)))
+    existing = set(r["category"] for r in cur.fetchall())
     cur.close()
     conn.close()
-    all_cats = local_cats + [c for c in db_cats if c not in local_cats]
-    return jsonify(all_cats)
+    # Возвращаем только те что есть в базе в правильном порядке
+    result = [c for c in ORDERED_CATS if c in existing]
+    # Добавляем оставшиеся которых нет в списке
+    for c in existing:
+        if c not in result:
+            result.append(c)
+    return jsonify(result)
 
 @app.route("/api/diary", methods=["GET"])
 def get_diary():
@@ -2230,7 +2260,7 @@ def analyze_photo():
     }
     
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
         req = urllib.request.Request(
             url,
             data=json.dumps(payload).encode(),
