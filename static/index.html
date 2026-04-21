@@ -268,55 +268,7 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
     </div>
     <div class="topbar-icons">
       <button class="fire-btn" onclick="openSubpage('subpage-streak')">
-      <svg class="fire-svg inactive" id="fire-emoji" viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="fg1" cx="50%" cy="75%" r="65%">
-            <stop offset="0%" stop-color="#FFF176"/>
-            <stop offset="35%" stop-color="#FFB300"/>
-            <stop offset="100%" stop-color="#E53935"/>
-          </radialGradient>
-          <radialGradient id="fg2" cx="50%" cy="55%" r="55%">
-            <stop offset="0%" stop-color="#FFEE58" stop-opacity="0.9"/>
-            <stop offset="100%" stop-color="#FF6F00" stop-opacity="0.6"/>
-          </radialGradient>
-        </defs>
-        <!-- Main flame body - based on designer shape -->
-        <path d="M50 8
-          C50 8 62 22 66 36
-          C70 26 67 14 61 7
-          C72 20 78 38 74 55
-          C79 46 79 34 75 24
-          C84 40 86 60 80 76
-          C85 68 86 56 83 46
-          C89 62 86 82 74 94
-          C66 103 58 107 50 107
-          C42 107 34 103 26 94
-          C14 82 11 62 17 46
-          C14 56 15 68 20 76
-          C14 60 16 40 25 24
-          C21 34 21 46 26 55
-          C22 38 28 20 39 7
-          C33 14 30 26 34 36
-          C38 22 50 8 50 8Z"
-          fill="url(#fg1)"/>
-        <!-- Inner lighter flame -->
-        <path d="M50 38
-          C50 38 57 50 58 60
-          C61 53 60 44 57 38
-          C62 47 63 58 60 68
-          C62 62 63 55 61 49
-          C65 58 63 71 57 79
-          C54 84 52 87 50 87
-          C48 87 46 84 43 79
-          C37 71 35 58 39 49
-          C37 55 38 62 40 68
-          C37 58 38 47 43 38
-          C40 44 39 53 42 60
-          C43 50 50 38 50 38Z"
-          fill="url(#fg2)"/>
-        <!-- Core bright spot -->
-        <ellipse cx="50" cy="80" rx="9" ry="12" fill="#FFFDE7" opacity="0.75"/>
-      </svg>
+      <img id="fire-emoji" src="/static/fire.svg" class="fire-svg inactive" style="width:28px;height:28px;object-fit:contain">
       <span class="fire-badge" id="fire-badge"></span>
       </button>
       <button class="cal-btn" onclick="openSubpage('subpage-calendar')">
