@@ -86,6 +86,8 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
 .fire-svg { width: 36px; height: 36px; transition: filter .3s; }
 .fire-svg.active { filter: drop-shadow(0 0 6px #ff6b00) drop-shadow(0 0 3px #ff8c00); animation: flicker 1.8s ease-in-out infinite; }
 .fire-svg.inactive { filter: grayscale(1) opacity(.35); }
+img.fire-svg.inactive { filter: grayscale(1) opacity(.35); }
+img.fire-svg.active { filter: sepia(1) saturate(4) hue-rotate(0deg) brightness(1.1) drop-shadow(0 0 6px #ff8c00); }
 @keyframes flicker {
   0%,100% { transform: scale(1) rotate(-2deg); }
   20% { transform: scale(1.06) rotate(2deg); }
@@ -1506,29 +1508,17 @@ async function renderStreakSubpage() {
   const weekN = Math.floor(diffDays / 7) + 1;
   const days = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
-  const glowStyle = s.current_streak>0 ? 'filter:drop-shadow(0 0 16px #ff6b00) drop-shadow(0 0 6px #ffb300)' : 'filter:grayscale(1) opacity(.3)';
-  const fireSvg = `<svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg" width="90" height="90" style="${glowStyle}">
-    <defs>
-      <radialGradient id="sf1" cx="50%" cy="75%" r="65%">
-        <stop offset="0%" stop-color="#FFF176"/>
-        <stop offset="35%" stop-color="#FFB300"/>
-        <stop offset="100%" stop-color="#E53935"/>
-      </radialGradient>
-      <radialGradient id="sf2" cx="50%" cy="55%" r="55%">
-        <stop offset="0%" stop-color="#FFEE58" stop-opacity="0.9"/>
-        <stop offset="100%" stop-color="#FF6F00" stop-opacity="0.6"/>
-      </radialGradient>
-    </defs>
-    <path d="M50 8 C50 8 62 22 66 36 C70 26 67 14 61 7 C72 20 78 38 74 55 C79 46 79 34 75 24 C84 40 86 60 80 76 C85 68 86 56 83 46 C89 62 86 82 74 94 C66 103 58 107 50 107 C42 107 34 103 26 94 C14 82 11 62 17 46 C14 56 15 68 20 76 C14 60 16 40 25 24 C21 34 21 46 26 55 C22 38 28 20 39 7 C33 14 30 26 34 36 C38 22 50 8 50 8Z" fill="url(#sf1)"/>
-    <path d="M50 38 C50 38 57 50 58 60 C61 53 60 44 57 38 C62 47 63 58 60 68 C62 62 63 55 61 49 C65 58 63 71 57 79 C54 84 52 87 50 87 C48 87 46 84 43 79 C37 71 35 58 39 49 C37 55 38 62 40 68 C37 58 38 47 43 38 C40 44 39 53 42 60 C43 50 50 38 50 38Z" fill="url(#sf2)"/>
-    <ellipse cx="50" cy="80" rx="9" ry="12" fill="#FFFDE7" opacity="0.75"/>
-  </svg>`;
+  const activeFilter = 'sepia(1) saturate(4) hue-rotate(0deg) brightness(1.1)';
+  const inactiveFilter = 'grayscale(1) opacity(0.3)';
+  const imgFilter = s.current_streak>0 ? activeFilter : inactiveFilter;
+  const glowStyle = s.current_streak>0 ? 'filter:sepia(1) saturate(4) hue-rotate(0deg) brightness(1.1) drop-shadow(0 0 16px #ff8c00)' : 'filter:grayscale(1) opacity(.3)';
+  const fireSvg = `<img src="/static/fire.svg" width="110" height="110" style="object-fit:contain;${glowStyle}">`;
 
   document.getElementById('streak-subpage-content').innerHTML = `
     <div style="text-align:center;padding:24px 0 20px">
       ${fireSvg}
       <div style="font-size:48px;font-weight:800;color:${s.current_streak>0?'var(--green)':'var(--text2)'};margin-top:12px">${s.current_streak}</div>
-      <div style="font-size:15px;color:var(--text2);margin-top:4px">дней в ударе</div>
+      <div style="font-size:15px;color:var(--text2);margin-top:4px">дней в серии</div>
     </div>
 
     <div style="background:var(--bg2);border-radius:16px;overflow:hidden;margin-bottom:12px">
