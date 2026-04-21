@@ -108,11 +108,6 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
 .fire-badge { position: absolute; top: -2px; right: -4px; background: var(--green); color: #000; font-size: 10px; font-weight: 800; border-radius: 10px; padding: 1px 5px; display: none; }
 
 /* WEEK STRIP */
-.week-strip { display: flex; padding: 0 10px 14px; gap: 2px; }
-.week-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.week-day-name { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; }
-.week-day-num { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--text2); }
-.week-day-num.today { background: var(--green); color: #000; font-weight: 800; }
 
 /* MACRO STRIP */
 .macro-strip { background: var(--bg2); margin: 0 12px 14px; border-radius: 12px; }
@@ -273,24 +268,54 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
     </div>
     <div class="topbar-icons">
       <button class="fire-btn" onclick="openSubpage('subpage-streak')">
-      <svg class="fire-svg inactive" id="fire-emoji" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+      <svg class="fire-svg inactive" id="fire-emoji" viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <radialGradient id="fg1" cx="50%" cy="80%" r="60%">
+          <radialGradient id="fg1" cx="50%" cy="75%" r="65%">
             <stop offset="0%" stop-color="#FFF176"/>
-            <stop offset="40%" stop-color="#FFB300"/>
+            <stop offset="35%" stop-color="#FFB300"/>
             <stop offset="100%" stop-color="#E53935"/>
           </radialGradient>
-          <radialGradient id="fg2" cx="50%" cy="70%" r="50%">
-            <stop offset="0%" stop-color="#FFEE58"/>
-            <stop offset="100%" stop-color="#FF6F00"/>
+          <radialGradient id="fg2" cx="50%" cy="55%" r="55%">
+            <stop offset="0%" stop-color="#FFEE58" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#FF6F00" stop-opacity="0.6"/>
           </radialGradient>
         </defs>
-        <!-- outer flame -->
-        <path d="M50 5 C50 5 65 25 68 40 C72 30 70 18 65 10 C75 22 80 38 78 55 C82 48 83 38 80 28 C88 42 90 60 85 75 C88 70 91 62 90 52 C95 65 93 85 82 97 C74 107 62 112 50 112 C38 112 26 107 18 97 C7 85 5 65 10 52 C9 62 12 70 15 75 C10 60 12 42 20 28 C17 38 18 48 22 55 C20 38 25 22 35 10 C30 18 28 30 32 40 C35 25 50 5 50 5Z" fill="url(#fg1)"/>
-        <!-- inner flame -->
-        <path d="M50 35 C50 35 58 48 59 58 C62 52 61 44 58 38 C63 46 65 57 62 67 C64 63 65 57 64 51 C67 59 66 70 61 78 C57 84 54 87 50 87 C46 87 43 84 39 78 C34 70 33 59 36 51 C35 57 36 63 38 67 C35 57 37 46 42 38 C39 44 38 52 41 58 C42 48 50 35 50 35Z" fill="url(#fg2)"/>
-        <!-- inner glow core -->
-        <ellipse cx="50" cy="78" rx="10" ry="14" fill="#FFFDE7" opacity="0.7"/>
+        <!-- Main flame body - based on designer shape -->
+        <path d="M50 8
+          C50 8 62 22 66 36
+          C70 26 67 14 61 7
+          C72 20 78 38 74 55
+          C79 46 79 34 75 24
+          C84 40 86 60 80 76
+          C85 68 86 56 83 46
+          C89 62 86 82 74 94
+          C66 103 58 107 50 107
+          C42 107 34 103 26 94
+          C14 82 11 62 17 46
+          C14 56 15 68 20 76
+          C14 60 16 40 25 24
+          C21 34 21 46 26 55
+          C22 38 28 20 39 7
+          C33 14 30 26 34 36
+          C38 22 50 8 50 8Z"
+          fill="url(#fg1)"/>
+        <!-- Inner lighter flame -->
+        <path d="M50 38
+          C50 38 57 50 58 60
+          C61 53 60 44 57 38
+          C62 47 63 58 60 68
+          C62 62 63 55 61 49
+          C65 58 63 71 57 79
+          C54 84 52 87 50 87
+          C48 87 46 84 43 79
+          C37 71 35 58 39 49
+          C37 55 38 62 40 68
+          C37 58 38 47 43 38
+          C40 44 39 53 42 60
+          C43 50 50 38 50 38Z"
+          fill="url(#fg2)"/>
+        <!-- Core bright spot -->
+        <ellipse cx="50" cy="80" rx="9" ry="12" fill="#FFFDE7" opacity="0.75"/>
       </svg>
       <span class="fire-badge" id="fire-badge"></span>
       </button>
@@ -307,7 +332,6 @@ span.toggle::after { content:""; position:absolute; width:18px; height:18px; bor
       </button>
     </div>
   </div>
-  <div class="week-strip" id="week-strip"></div>
   <div class="macro-strip" onclick="openSubpage('subpage-summary')" style="cursor:pointer">
     <div class="macro-strip-row">
       <div class="macro-cell" style="flex:1.5;text-align:left;padding-left:14px">
@@ -1271,6 +1295,7 @@ async function filterCategory(cat) {
   document.getElementById('food-list').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">Загрузка...</div>';
   let url = '/api/foods?category=' + encodeURIComponent(cat);
   if(q) url += '&q=' + encodeURIComponent(q);
+  url = url.replace(/\+/g, '%20');
   const results = await api(url);
   renderFoodsAll(results);
 }
@@ -1282,26 +1307,6 @@ function selTab(el,mt){
 }
 
 let searchTimeout = null;
-function renderFoodsAll(list) {
-  if(!list || !list.length) {
-    document.getElementById('food-list').innerHTML = '<div style="padding:30px;text-align:center;color:var(--text2)">Ничего не найдено</div>';
-    return;
-  }
-  document.getElementById('food-list').innerHTML = list.map(f => {
-    const isCustom = f.id > 100000;
-    const onclick = isCustom
-      ? `openAddModalCustom(${f.id},'${(f.name||'').replace(/'/g,"\\'")}',${f.cal},${f.protein},${f.fat},${f.carbs})`
-      : `openAddModal(${f.id})`;
-    return `<div class="food-item-row" onclick="${onclick}">
-      <div style="flex:1">
-        <div class="food-item-name">${f.name}</div>
-        <div class="food-item-meta">${f.cal} ккал · Б:${f.protein}г У:${f.carbs}г Ж:${f.fat}г · на 100г</div>
-      </div>
-      <div class="food-item-add">+</div>
-    </div>`;
-  }).join('');
-}
-
 function filterFoods(){
   const q = document.getElementById('search-input').value.toLowerCase();
   
