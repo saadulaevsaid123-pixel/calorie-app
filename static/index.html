@@ -270,7 +270,7 @@ img.fire-svg.active { filter: sepia(1) saturate(4) hue-rotate(0deg) brightness(1
     </div>
     <div class="topbar-icons">
       <button class="fire-btn" onclick="openSubpage('subpage-streak')">
-      <img id="fire-emoji" src="/static/fire.svg" class="fire-svg inactive" style="width:28px;height:28px;object-fit:contain">
+      <img id="fire-emoji" src="/static/fire-active.svg" class="fire-svg" style="width:32px;height:32px;object-fit:contain;mix-blend-mode:screen">
       <span class="fire-badge" id="fire-badge"></span>
       </button>
       <button class="cal-btn" onclick="openSubpage('subpage-calendar')">
@@ -1030,10 +1030,14 @@ async function loadDiary(){
   const fire = document.getElementById('fire-emoji');
   const badge = document.getElementById('fire-badge');
   if(streak.current_streak > 0){
-    fire.classList.remove('inactive'); fire.classList.add('active');
+    fire.src = '/static/fire-active.svg';
+    fire.style.mixBlendMode = 'screen';
+    fire.style.filter = '';
     badge.textContent = streak.current_streak; badge.style.display = 'block';
   } else {
-    fire.classList.remove('active'); fire.classList.add('inactive');
+    fire.src = '/static/fire-inactive.svg';
+    fire.style.mixBlendMode = 'screen';
+    fire.style.filter = 'grayscale(1) opacity(0.4)';
     badge.style.display = 'none';
   }
 
@@ -1511,8 +1515,8 @@ async function renderStreakSubpage() {
   const activeFilter = 'sepia(1) saturate(4) hue-rotate(0deg) brightness(1.1)';
   const inactiveFilter = 'grayscale(1) opacity(0.3)';
   const imgFilter = s.current_streak>0 ? activeFilter : inactiveFilter;
-  const glowStyle = s.current_streak>0 ? 'filter:sepia(1) saturate(4) hue-rotate(0deg) brightness(1.1) drop-shadow(0 0 16px #ff8c00)' : 'filter:grayscale(1) opacity(.3)';
-  const fireSvg = `<img src="/static/fire.svg" width="110" height="110" style="object-fit:contain;${glowStyle}">`;
+  const fireSrc = s.current_streak>0 ? '/static/fire-active.svg' : '/static/fire-inactive.svg';
+  const fireSvg = `<img src="${fireSrc}" width="110" height="110" style="object-fit:contain;${s.current_streak>0?'filter:drop-shadow(0 0 16px #ff8c00)':''}">`;
 
   document.getElementById('streak-subpage-content').innerHTML = `
     <div style="text-align:center;padding:24px 0 20px">
